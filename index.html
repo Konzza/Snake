@@ -15,10 +15,21 @@
     align-items: center;
     justify-content: center;
     background: #1a1a2e;
+    transition: background-color 0.6s ease;
     color: #eee;
-    font-family: system-ui, sans-serif;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
-  #info { margin-bottom: 6px; font-size: 16px; text-align: center; }
+  h1 {
+    margin: 0 0 10px;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #ffd166;
+  }
+  #info { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 8px; font-size: 14px; }
+  #info .chip { padding: 5px 12px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 999px; }
+  #info b { margin-left: 2px; font-size: 16px; font-variant-numeric: tabular-nums; }
   #unlock {
     height: 24px;
     margin-bottom: 6px;
@@ -38,7 +49,9 @@
     aspect-ratio: 1 / 1;
     background: #16213e;
     border: 3px solid #0f3460;
-    border-radius: 8px;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    transition: box-shadow 0.6s ease, border-color 0.6s ease;
     touch-action: none;           /* чтобы свайпы не прокручивали страницу */
   }
   #nameBox {
@@ -50,9 +63,10 @@
     width: 80%;
     padding: 12px;
     text-align: center;
-    background: rgba(15, 52, 96, 0.96);
-    border: 1px solid #ffd166;
-    border-radius: 8px;
+    background: rgba(20, 24, 44, 0.95);
+    border: 1px solid rgba(255, 209, 102, 0.7);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     z-index: 2;
   }
   #nameBox input {
@@ -68,12 +82,13 @@
     padding: 8px 14px;
     font-size: 14px;
     color: #fff;
-    background: #0f3460;
-    border: 1px solid #3a6ea5;
-    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
     cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
   }
-  button:hover { background: #16497f; }
+  button:hover { background: rgba(255, 255, 255, 0.18); }
   button:disabled { opacity: 0.5; cursor: default; }
 
   /* Экранные кнопки: видны только на сенсорных устройствах */
@@ -100,9 +115,9 @@
 
   /* Выбор темы */
   #themes { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 10px; width: min(420px, 96vw); }
-  #themes button { padding: 6px 10px; font-size: 13px; background: #16213e; border-color: #2a3f6b; }
-  #themes button:hover { background: #1c2c52; }
-  #themes button.active { background: #0f3460; border-color: #ffd166; color: #ffd166; }
+  #themes button { padding: 6px 12px; font-size: 13px; border-radius: 999px; background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); }
+  #themes button:hover { background: rgba(255,255,255,0.12); }
+  #themes button.active { background: rgba(255, 209, 102, 0.14); border-color: #ffd166; color: #ffd166; }
 
   #hint { margin: 12px 12px 0; font-size: 13px; opacity: 0.7; text-align: center; max-width: 420px; }
 
@@ -110,10 +125,10 @@
   #board {
     margin-top: 18px;
     width: min(340px, 94vw);
-    padding: 12px 16px;
-    background: #16213e;
-    border: 1px solid #0f3460;
-    border-radius: 8px;
+    padding: 14px 18px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
   }
   #board h3 { margin: 0 0 4px; text-align: center; font-size: 17px; color: #ffd166; }
   #boardStatus { margin-bottom: 8px; text-align: center; font-size: 12px; opacity: 0.6; min-height: 16px; }
@@ -124,16 +139,20 @@
   #scoreList .pts { font-weight: bold; }
   #scoreList small { opacity: 0.5; font-size: 11px; }
   #scoreList li.new { color: #ffd166; }
+  #scoreList li:nth-child(1)::marker { color: #ffd166; font-weight: bold; }
+  #scoreList li:nth-child(2)::marker { color: #cfd8e3; font-weight: bold; }
+  #scoreList li:nth-child(3)::marker { color: #d9a066; font-weight: bold; }
   #scoreList li.empty { list-style: none; margin-left: -26px; text-align: center; opacity: 0.6; }
   #refreshBtn { display: block; margin: 10px auto 0; font-size: 12px; opacity: 0.8; }
 </style>
 </head>
 <body>
 
+<h1>Змейка</h1>
 <div id="info">
-  Счёт: <span id="score">0</span> |
-  Рекорд: <span id="best">0</span> |
-  Улучшения: <span id="upgrades">0</span>
+  <span class="chip">Счёт <b id="score">0</b></span>
+  <span class="chip">Рекорд <b id="best">0</b></span>
+  <span class="chip">Улучшения <b id="upgrades">0</b></span>
 </div>
 <div id="unlock"></div>
 <div id="themes"></div>
@@ -225,11 +244,11 @@ const BONUSES = [
 // bg — цвета фона сверху вниз (спокойные, близкие друг к другу), hue — оттенок змейки,
 // ambient — лёгкая «погода» на фоне, checker — цвет шахматной сетки
 const THEMES = [
-  { id: 'forest', icon: '🌲', name: 'Лес',     bg: ['#16301f', '#1c3926'], border: '#3f7a52', hue: 70,  checker: 'rgba(255,255,255,0.025)', ambient: 'leaves'  },
-  { id: 'desert', icon: '🏜️', name: 'Пустыня', bg: ['#4a3b27', '#564430'], border: '#b8935a', hue: 140, checker: 'rgba(255,230,180,0.04)',  ambient: 'sand'    },
-  { id: 'winter', icon: '❄️', name: 'Зима',    bg: ['#17314b', '#1d3d5c'], border: '#7fb8e0', hue: 165, checker: 'rgba(255,255,255,0.035)', ambient: 'snow'    },
-  { id: 'space',  icon: '🌌', name: 'Космос',  bg: ['#0d0c20', '#141230'], border: '#6a5cc8', hue: 175, checker: 'rgba(160,140,255,0.03)',  ambient: 'space'   },
-  { id: 'ocean',  icon: '🌊', name: 'Океан',   bg: ['#0c3848', '#11495c'], border: '#3fb0c8', hue: 50,  checker: 'rgba(255,255,255,0.03)',  ambient: 'bubbles' },
+  { id: 'forest', icon: '🌲', name: 'Лес',     bg: ['#16301f', '#1c3926'], border: '#3f7a52', page: '#0f2217', hue: 70,  checker: 'rgba(255,255,255,0.025)', ambient: 'leaves'  },
+  { id: 'desert', icon: '🏜️', name: 'Пустыня', bg: ['#4a3b27', '#564430'], border: '#b8935a', page: '#33281a', hue: 140, checker: 'rgba(255,230,180,0.04)',  ambient: 'sand'    },
+  { id: 'winter', icon: '❄️', name: 'Зима',    bg: ['#17314b', '#1d3d5c'], border: '#7fb8e0', page: '#10243a', hue: 165, checker: 'rgba(255,255,255,0.035)', ambient: 'snow'    },
+  { id: 'space',  icon: '🌌', name: 'Космос',  bg: ['#0d0c20', '#141230'], border: '#6a5cc8', page: '#090818', hue: 175, checker: 'rgba(160,140,255,0.03)',  ambient: 'space'   },
+  { id: 'ocean',  icon: '🌊', name: 'Океан',   bg: ['#0c3848', '#11495c'], border: '#3fb0c8', page: '#082a36', hue: 50,  checker: 'rgba(255,255,255,0.03)',  ambient: 'bubbles' },
 ];
 const AUTO_THEME = { id: 'auto', icon: '🔄', name: 'Авто' };
 
@@ -754,6 +773,8 @@ function gameOver() {
 }
 
 // ---------- Отрисовка ----------
+let lastThemeKey = null;
+
 function drawBackground() {
   const b = biome();
   const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
@@ -761,7 +782,13 @@ function drawBackground() {
   grad.addColorStop(1, b.bg[1]);
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  canvas.style.borderColor = b.border;
+  // Рамка, свечение и цвет страницы меняются только при смене темы (с плавным переходом)
+  if (lastThemeKey !== b.id) {
+    lastThemeKey = b.id;
+    canvas.style.borderColor = b.border;
+    canvas.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.4), 0 0 32px ' + b.border + '40';
+    document.body.style.backgroundColor = b.page;
+  }
 }
 
 function drawBoardPattern() {
@@ -929,9 +956,9 @@ function drawSnake(t) {
     const size = CELL - 2;
 
     ctx.fillStyle = snakeColor(i, t);
-    if (unlocked(6) && ctx.roundRect) {
+    if (ctx.roundRect) {
       ctx.beginPath();
-      ctx.roundRect(x, y, size, size, 7);
+      ctx.roundRect(x, y, size, size, unlocked(6) ? 7 : 3);
       ctx.fill();
     } else {
       ctx.fillRect(x, y, size, size);
@@ -976,6 +1003,18 @@ function drawSnake(t) {
   }
 }
 
+// Лёгкое затемнение по краям поля
+function drawVignette() {
+  const g = ctx.createRadialGradient(
+    canvas.width / 2, canvas.height / 2, canvas.width * 0.35,
+    canvas.width / 2, canvas.height / 2, canvas.width * 0.75
+  );
+  g.addColorStop(0, 'rgba(0, 0, 0, 0)');
+  g.addColorStop(1, 'rgba(0, 0, 0, 0.28)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
 function drawParticles() {
   particles.forEach(p => {
     p.x += p.vx;
@@ -1010,15 +1049,42 @@ function drawHud() {
 }
 
 function showMessage(text, subtext) {
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+  // Лёгкое затемнение поля и аккуратная карточка с текстом
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const cx = canvas.width / 2;
+  const titleY = canvas.height / 2 - 40;
+
+  // Ширина карточки подстраивается под самый длинный текст
+  ctx.font = 'bold 20px system-ui, sans-serif';
+  let textW = ctx.measureText(text).width;
+  if (subtext) {
+    ctx.font = '15px system-ui, sans-serif';
+    textW = Math.max(textW, ctx.measureText(subtext).width);
+  }
+  const cardW = Math.min(canvas.width - 20, Math.max(220, textW + 44));
+  const cardH = subtext ? 70 : 46;
+  const cardX = cx - cardW / 2;
+  const cardY = titleY - 30;
+
+  ctx.fillStyle = 'rgba(12, 14, 30, 0.78)';
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(cardX, cardY, cardW, cardH, 12);
+  else ctx.rect(cardX, cardY, cardW, cardH);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
   ctx.fillStyle = '#fff';
   ctx.textAlign = 'center';
-  ctx.font = 'bold 22px system-ui, sans-serif';
-  ctx.fillText(text, canvas.width / 2, canvas.height / 2 - 40);
+  ctx.font = 'bold 20px system-ui, sans-serif';
+  ctx.fillText(text, cx, titleY);
   if (subtext) {
-    ctx.font = '16px system-ui, sans-serif';
-    ctx.fillText(subtext, canvas.width / 2, canvas.height / 2 - 12);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+    ctx.font = '15px system-ui, sans-serif';
+    ctx.fillText(subtext, cx, titleY + 26);
   }
 }
 
@@ -1033,6 +1099,7 @@ function render(t) {
   drawBonus(t);
   drawSnake(t);
   drawParticles();
+  drawVignette();
 
   // Вспышка при смене биома
   if (flash > 0) {
