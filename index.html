@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Змейка</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    padding: 12px 0 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #1a1a2e;
+    color: #eee;
+    font-family: system-ui, sans-serif;
+  }
+  #info { margin-bottom: 6px; font-size: 16px; text-align: center; }
+  #unlock {
+    height: 24px;
+    margin-bottom: 6px;
+    font-size: 15px;
+    color: #ffd166;
+    text-align: center;
+    transition: opacity 0.4s;
+    opacity: 0;
+  }
+
+  /* Поле + окно ввода имени */
+  #wrap { position: relative; width: min(406px, 94vw); }
+  canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    background: #16213e;
+    border: 3px solid #0f3460;
+    border-radius: 8px;
+    touch-action: none;           /* чтобы свайпы не прокручивали страницу */
+  }
+  #nameBox {
+    display: none;
+    position: absolute;
+    left: 50%;
+    top: 58%;
+    transform: translateX(-50%);
+    width: 80%;
+    padding: 12px;
+    text-align: center;
+    background: rgba(15, 52, 96, 0.96);
+    border: 1px solid #ffd166;
+    border-radius: 8px;
+    z-index: 2;
+  }
+  #nameBox input {
+    width: 90%;
+    margin: 8px 0;
+    padding: 8px;
+    font-size: 16px;
+    border: none;
+    border-radius: 6px;
+    text-align: center;
+  }
+  button {
+    padding: 8px 14px;
+    font-size: 14px;
+    color: #fff;
+    background: #0f3460;
+    border: 1px solid #3a6ea5;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  button:hover { background: #16497f; }
+  button:disabled { opacity: 0.5; cursor: default; }
+
+  /* Экранные кнопки: видны только на сенсорных устройствах */
+  #pad {
+    display: none;
+    margin-top: 12px;
+    grid-template-columns: repeat(3, 64px);
+    grid-template-rows: repeat(3, 64px);
+    gap: 6px;
+  }
+  #pad button {
+    padding: 0;
+    font-size: 22px;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  #pad .up    { grid-column: 2; grid-row: 1; }
+  #pad .left  { grid-column: 1; grid-row: 2; }
+  #pad .mid   { grid-column: 2; grid-row: 2; font-size: 16px; }
+  #pad .right { grid-column: 3; grid-row: 2; }
+  #pad .down  { grid-column: 2; grid-row: 3; }
+  @media (pointer: coarse) { #pad { display: grid; } }
+
+  /* Выбор темы */
+  #themes { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 10px; width: min(420px, 96vw); }
+  #themes button { padding: 6px 10px; font-size: 13px; background: #16213e; border-color: #2a3f6b; }
+  #themes button:hover { background: #1c2c52; }
+  #themes button.active { background: #0f3460; border-color: #ffd166; color: #ffd166; }
+
+  #hint { margin: 12px 12px 0; font-size: 13px; opacity: 0.7; text-align: center; max-width: 420px; }
+
+  /* Таблица рекордов */
+  #board {
+    margin-top: 18px;
+    width: min(340px, 94vw);
+    padding: 12px 16px;
+    background: #16213e;
+    border: 1px solid #0f3460;
+    border-radius: 8px;
+  }
+  #board h3 { margin: 0 0 4px; text-align: center; font-size: 17px; color: #ffd166; }
+  #boardStatus { margin-bottom: 8px; text-align: center; font-size: 12px; opacity: 0.6; min-height: 16px; }
+  #scoreList { margin: 0; padding-left: 26px; }
+  #scoreList li { padding: 3px 0; }
+  #scoreList li .row { display: flex; gap: 8px; align-items: baseline; }
+  #scoreList .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #scoreList .pts { font-weight: bold; }
+  #scoreList small { opacity: 0.5; font-size: 11px; }
+  #scoreList li.new { color: #ffd166; }
+  #scoreList li.empty { list-style: none; margin-left: -26px; text-align: center; opacity: 0.6; }
+  #refreshBtn { display: block; margin: 10px auto 0; font-size: 12px; opacity: 0.8; }
+</style>
+</head>
+<body>
+
+<div id="info">
+  Счёт: <span id="score">0</span> |
+  Рекорд: <span id="best">0</span> |
+  Улучшения: <span id="upgrades">0</span>
+</div>
+<div id="unlock"></div>
+<div id="themes"></div>
+
+<div id="wrap">
+  <canvas id="game" width="400" height="400"></canvas>
+  <div id="nameBox">
+    <div>Вы в таблице рекордов! Счёт: <b id="nameScore"></b></div>
+    <input id="nameInput" maxlength="12" placeholder="Ваше имя" autocomplete="off">
+    <div>
+      <button id="nameSkip">Пропустить</button>
+      <button id="nameSave">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<div id="pad">
+  <button class="up" data-dx="0" data-dy="-1">▲</button>
+  <button class="left" data-dx="-1" data-dy="0">◀</button>
+  <button class="mid" id="padToggle">Пуск</button>
+  <button class="right" data-dx="1" data-dy="0">▶</button>
+  <button class="down" data-dx="0" data-dy="1">▼</button>
+</div>
+
+<div id="hint">
+  Стрелки или WASD — движение, Пробел — пауза / новая игра.<br>
+  На телефоне: свайп по полю или кнопки, касание поля — пауза / старт.<br>
+  Золотое яблоко появляется случайно и вскоре исчезает — успей его съесть!<br>
+  Тему фона можно выбрать кнопками над полем.
+</div>
+
+<div id="board">
+  <h3>Таблица рекордов</h3>
+  <div id="boardStatus"></div>
+  <ol id="scoreList"></ol>
+  <button id="refreshBtn">Обновить</button>
+</div>
+
+<script>
+// ---------- Подключение к Supabase (общая таблица рекордов) ----------
+// Публичный (publishable) ключ можно хранить в коде страницы: доступ ограничен правилами таблицы.
+// Секретный ключ сюда вставлять нельзя.
+const SUPABASE_URL = 'https://kpupuatrfuarkutzagxz.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_O9T3B3KDkurYJgZS3ZUSOQ_xklC3g9c';
+const SCORES_API = SUPABASE_URL + '/rest/v1/scores';
+const API_HEADERS = { apikey: SUPABASE_KEY };
+const REQUEST_TIMEOUT = 6000;  // сколько ждать ответ сервера (мс)
+
+// ---------- Настройки ----------
+const CELL = 20;               // размер одной клетки в пикселях
+const GRID = 20;               // поле 20x20 клеток (20 * 20 = 400 px)
+const START_SPEED = 130;       // миллисекунд между шагами (меньше = быстрее)
+const MIN_SPEED = 60;          // самая высокая скорость
+
+const BONUS_CHANCE = 0.25;     // шанс золотого яблока после съеденного обычного
+const BONUS_LIFE = 55;         // сколько шагов золотое яблоко лежит на поле
+const SLOW_STEPS = 40;         // длительность замедления (в шагах)
+const SLOW_FACTOR = 1.7;       // во сколько раз медленнее
+const WRAP_STEPS = 50;         // длительность прохода сквозь стены (в шагах)
+
+const BIOME_EVERY = 15;        // в режиме «Авто» тема меняется каждые 15 очков
+const MAX_RECORDS = 10;        // сколько результатов показывать в таблице
+
+// ---------- Улучшения (открываются за очки) ----------
+const UPGRADES = [
+  { at: 1,  text: 'Глаза у змейки' },
+  { at: 2,  text: 'Шахматное поле' },
+  { at: 3,  text: 'Градиентное тело' },
+  { at: 4,  text: 'Свечение змейки' },
+  { at: 5,  text: 'Яблоко с листиком и бликом' },
+  { at: 6,  text: 'Скруглённые сегменты' },
+  { at: 7,  text: 'Искры при поедании' },
+  { at: 8,  text: 'Звёздное небо' },
+  { at: 9,  text: 'Пульсирующее яблоко' },
+  { at: 10, text: 'Радужная змейка' },
+  { at: 11, text: 'Язычок у змейки' },
+  { at: 12, text: 'Звук поедания' },
+];
+
+// ---------- Награды золотого яблока ----------
+const BONUSES = [
+  { id: 'points', text: '+5 очков' },
+  { id: 'slow',   text: 'замедление времени' },
+  { id: 'wrap',   text: 'проход сквозь стены' },
+  { id: 'shrink', text: 'змейка стала короче' },
+];
+
+// ---------- Темы фона ----------
+// bg — цвета фона сверху вниз (спокойные, близкие друг к другу), hue — оттенок змейки,
+// ambient — лёгкая «погода» на фоне, checker — цвет шахматной сетки
+const THEMES = [
+  { id: 'forest', icon: '🌲', name: 'Лес',     bg: ['#16301f', '#1c3926'], border: '#3f7a52', hue: 70,  checker: 'rgba(255,255,255,0.025)', ambient: 'leaves'  },
+  { id: 'desert', icon: '🏜️', name: 'Пустыня', bg: ['#4a3b27', '#564430'], border: '#b8935a', hue: 140, checker: 'rgba(255,230,180,0.04)',  ambient: 'sand'    },
+  { id: 'winter', icon: '❄️', name: 'Зима',    bg: ['#17314b', '#1d3d5c'], border: '#7fb8e0', hue: 165, checker: 'rgba(255,255,255,0.035)', ambient: 'snow'    },
+  { id: 'space',  icon: '🌌', name: 'Космос',  bg: ['#0d0c20', '#141230'], border: '#6a5cc8', hue: 175, checker: 'rgba(160,140,255,0.03)',  ambient: 'space'   },
+  { id: 'ocean',  icon: '🌊', name: 'Океан',   bg: ['#0c3848', '#11495c'], border: '#3fb0c8', hue: 50,  checker: 'rgba(255,255,255,0.03)',  ambient: 'bubbles' },
+];
+const AUTO_THEME = { id: 'auto', icon: '🔄', name: 'Авто' };
+
+// Выбранная тема запоминается в браузере
+let themeId = load('snakeTheme', 'forest');
+if (themeId !== 'auto' && !THEMES.some(t => t.id === themeId)) themeId = 'forest';
+
+function biomeIndex(s) {
+  return Math.floor(s / BIOME_EVERY) % THEMES.length;
+}
+// Текущая тема: выбранная игроком или (в режиме «Авто») зависящая от счёта
+function biome() {
+  if (themeId === 'auto') return THEMES[biomeIndex(score)];
+  return THEMES.find(t => t.id === themeId);
+}
+
+// Открыто ли улучшение, которое появляется на N-м очке
+function unlocked(n) {
+  return score >= n;
+}
+
+// ---------- Элементы страницы ----------
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const bestEl = document.getElementById('best');
+const upgradesEl = document.getElementById('upgrades');
+const unlockEl = document.getElementById('unlock');
+
+const nameBox = document.getElementById('nameBox');
+const nameInput = document.getElementById('nameInput');
+const nameScoreEl = document.getElementById('nameScore');
+const nameSaveBtn = document.getElementById('nameSave');
+const scoreListEl = document.getElementById('scoreList');
+const boardStatusEl = document.getElementById('boardStatus');
+
+// ---------- Состояние игры ----------
+let snake, direction, nextDirection, food, score, speed, timer, state;
+// state: 'ready' | 'running' | 'paused' | 'over'
+
+let gameId = 0;                // номер текущей партии (нужен, чтобы отличать старые асинхронные ответы)
+let bonus = null;              // золотое яблоко: { x, y, life, max } или null
+let slowSteps = 0;             // сколько шагов ещё действует замедление
+let wrapSteps = 0;             // сколько шагов ещё можно проходить сквозь стены
+let flash = 0;                 // белая вспышка при смене биома
+let pendingName = false;       // ждём ввода имени для таблицы рекордов
+let saving = false;            // сейчас отправляем рекорд
+let lastRecordIndex = -1;      // позиция только что добавленного рекорда
+
+let particles = [];            // искры
+let noticeTimeout;
+let audioCtx = null;
+
+// Звёзды для фона (улучшение «Звёздное небо»)
+const stars = Array.from({ length: 25 }, () => ({
+  x: Math.random() * canvas.width,
+  y: Math.random() * canvas.height,
+  size: Math.random() < 0.3 ? 2 : 1,
+  phase: Math.random() * Math.PI * 2,
+}));
+
+// Частицы фона для тем (листья, песок, снег, пузыри, звёзды)
+const ambient = Array.from({ length: 24 }, () => ({
+  x: Math.random() * canvas.width,
+  y: Math.random() * canvas.height,
+  size: 1 + Math.random() * 2,
+  phase: Math.random() * Math.PI * 2,
+}));
+
+// ---------- Локальное хранилище (запасной вариант без интернета) ----------
+function load(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw === null ? fallback : JSON.parse(raw);
+  } catch (e) {
+    return fallback;
+  }
+}
+function save(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* хранилище недоступно */ }
+}
+
+// Рекорды, сохранённые на этом устройстве
+let localRecords = load('snakeScores', null);
+if (!Array.isArray(localRecords)) {
+  // Переносим старый одиночный рекорд, если он был
+  let old = 0;
+  try { old = Number(localStorage.getItem('snakeBest')) || 0; } catch (e) { /* ничего */ }
+  localRecords = old > 0 ? [{ name: 'Игрок', score: old, date: '' }] : [];
+  save('snakeScores', localRecords);
+}
+
+// ---------- Таблица рекордов ----------
+let records = localRecords;    // то, что сейчас показано в таблице
+let online = false;            // удалось ли связаться с сервером
+
+function setStatus(text) {
+  boardStatusEl.textContent = text;
+}
+
+function bestScore() {
+  return records.length ? records[0].score : 0;
+}
+
+function renderBoard() {
+  scoreListEl.innerHTML = '';
+  if (records.length === 0) {
+    const li = document.createElement('li');
+    li.className = 'empty';
+    li.textContent = 'Пока пусто — сыграйте!';
+    scoreListEl.appendChild(li);
+  }
+  records.forEach((r, i) => {
+    const li = document.createElement('li');
+    if (i === lastRecordIndex) li.className = 'new';
+
+    const row = document.createElement('div');
+    row.className = 'row';
+
+    const name = document.createElement('span');
+    name.className = 'name';
+    name.textContent = r.name;
+
+    const pts = document.createElement('span');
+    pts.className = 'pts';
+    pts.textContent = r.score;
+
+    row.appendChild(name);
+    row.appendChild(pts);
+
+    if (r.date) {
+      const date = document.createElement('small');
+      date.textContent = r.date;
+      row.appendChild(date);
+    }
+
+    li.appendChild(row);
+    scoreListEl.appendChild(li);
+  });
+  bestEl.textContent = bestScore();
+}
+
+// Запрос к серверу с ограничением по времени
+async function request(url, options) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+  try {
+    const res = await fetch(url, Object.assign({}, options, { signal: controller.signal }));
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+// Загружает топ-10 с сервера. Если сервер недоступен — показывает локальные рекорды.
+async function fetchScores() {
+  setStatus('Загрузка…');
+  try {
+    const url = SCORES_API +
+      '?select=name,score,created_at&order=score.desc,created_at.asc&limit=' + MAX_RECORDS;
+    const res = await request(url, { headers: API_HEADERS });
+    const rows = await res.json();
+    records = rows.map(r => ({
+      name: r.name,
+      score: r.score,
+      date: r.created_at ? new Date(r.created_at).toLocaleDateString('ru-RU') : '',
+    }));
+    online = true;
+    setStatus('Общая таблица: её видят все игроки');
+  } catch (e) {
+    records = localRecords;
+    online = false;
+    setStatus('Нет связи с сервером: рекорды хранятся только на этом устройстве');
+  }
+  renderBoard();
+}
+
+// Добавляет рекорд на сервер (или локально, если сервер недоступен)
+async function addRecord(name, points) {
+  if (online) {
+    try {
+      await request(SCORES_API, {
+        method: 'POST',
+        headers: Object.assign({}, API_HEADERS, {
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal',
+        }),
+        body: JSON.stringify({ name: name, score: points }),
+      });
+      await fetchScores();
+      lastRecordIndex = records.findIndex(r => r.name === name && r.score === points);
+      renderBoard();
+      return;
+    } catch (e) {
+      showNotice('Не удалось отправить рекорд на сервер, он сохранён на устройстве');
+    }
+  }
+
+  // Запасной вариант: сохраняем на этом устройстве
+  let pos = localRecords.findIndex(r => points > r.score);
+  if (pos === -1) pos = localRecords.length;
+  localRecords.splice(pos, 0, {
+    name: name,
+    score: points,
+    date: new Date().toLocaleDateString('ru-RU'),
+  });
+  localRecords = localRecords.slice(0, MAX_RECORDS);
+  save('snakeScores', localRecords);
+  records = localRecords;
+  lastRecordIndex = pos;
+  renderBoard();
+}
+
+// Попадает ли результат в таблицу
+function qualifies(s) {
+  if (s <= 0) return false;
+  return records.length < MAX_RECORDS || s > records[records.length - 1].score;
+}
+
+function openNameBox() {
+  pendingName = true;
+  nameScoreEl.textContent = score;
+  nameInput.value = load('snakeName', '');
+  nameBox.style.display = 'block';
+  setTimeout(() => nameInput.focus(), 50);
+}
+
+function closeNameBox() {
+  pendingName = false;
+  nameBox.style.display = 'none';
+  nameInput.blur();
+}
+
+async function saveName() {
+  if (!pendingName || saving) return;
+  saving = true;
+  nameSaveBtn.disabled = true;
+  nameSaveBtn.textContent = 'Сохраняю…';
+
+  const name = nameInput.value.trim().slice(0, 12) || 'Игрок';
+  save('snakeName', name);
+  await addRecord(name, score);
+
+  saving = false;
+  nameSaveBtn.disabled = false;
+  nameSaveBtn.textContent = 'Сохранить';
+  closeNameBox();
+}
+
+function skipName() {
+  if (saving) return;
+  closeNameBox();
+}
+
+nameSaveBtn.addEventListener('click', () => { saveName(); document.activeElement.blur(); });
+document.getElementById('nameSkip').addEventListener('click', () => { skipName(); document.activeElement.blur(); });
+nameInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') saveName();
+});
+document.getElementById('refreshBtn').addEventListener('click', (e) => {
+  fetchScores();
+  e.currentTarget.blur();
+});
+
+// ---------- Счёт ----------
+function updateScoreboard() {
+  scoreEl.textContent = score;
+  const count = UPGRADES.filter(u => score >= u.at).length;
+  upgradesEl.textContent = count + '/' + UPGRADES.length;
+}
+
+function resetGame() {
+  gameId++;
+  // Змейка — массив клеток, голова в начале массива
+  snake = [
+    { x: 8, y: 10 },
+    { x: 7, y: 10 },
+    { x: 6, y: 10 },
+  ];
+  direction = { x: 1, y: 0 };
+  nextDirection = { x: 1, y: 0 };
+  score = 0;
+  speed = START_SPEED;
+  bonus = null;
+  slowSteps = 0;
+  wrapSteps = 0;
+  flash = 0;
+  lastRecordIndex = -1;
+  particles = [];
+  unlockEl.style.opacity = 0;
+  closeNameBox();
+  updateScoreboard();
+  renderBoard();
+  placeFood();
+}
+
+// Лежит ли клетка p под золотым яблоком (оно занимает 2x2 клетки)
+function inBonus(p) {
+  return bonus !== null &&
+    p.x >= bonus.x && p.x <= bonus.x + 1 &&
+    p.y >= bonus.y && p.y <= bonus.y + 1;
+}
+
+function placeFood() {
+  // Ищем случайную клетку, на которой нет змейки и золотого яблока
+  do {
+    food = {
+      x: Math.floor(Math.random() * GRID),
+      y: Math.floor(Math.random() * GRID),
+    };
+  } while (snake.some(part => part.x === food.x && part.y === food.y) || inBonus(food));
+}
+
+function spawnBonus() {
+  // Пробуем найти свободную область 2x2
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const x = Math.floor(Math.random() * (GRID - 1));
+    const y = Math.floor(Math.random() * (GRID - 1));
+    const covers = p => p.x >= x && p.x <= x + 1 && p.y >= y && p.y <= y + 1;
+    if (snake.some(covers) || covers(food)) continue;
+    bonus = { x, y, life: BONUS_LIFE, max: BONUS_LIFE };
+    return;
+  }
+}
+
+// ---------- Очки ----------
+// Добавляет очки, возвращает { upgrades: открывшиеся улучшения, biome: новый биом или null }
+function addScore(n) {
+  const old = score;
+  score += n;
+  updateScoreboard();
+
+  // Каждые 5 очков ускоряемся (проверяем «перешагнули ли границу», чтобы бонус +5 не пропустил её)
+  if (Math.floor(score / 5) > Math.floor(old / 5) && speed > MIN_SPEED) {
+    speed -= 10;
+    startLoop();
+  }
+
+  let newBiome = null;
+  if (themeId === 'auto' && biomeIndex(score) !== biomeIndex(old)) {
+    newBiome = THEMES[biomeIndex(score)];
+    flash = 1;
+  }
+
+  return {
+    upgrades: UPGRADES.filter(u => u.at > old && u.at <= score),
+    biome: newBiome,
+  };
+}
+
+// Превращает результат addScore в список строк для сообщения
+function describe(res) {
+  const parts = [];
+  if (res.upgrades.length) parts.push('Новое: ' + res.upgrades.map(u => u.text).join(', '));
+  if (res.biome) parts.push('Тема: ' + res.biome.name);
+  return parts;
+}
+
+// ---------- Звук ----------
+function initAudio() {
+  // Звук можно включить только после действия пользователя
+  if (audioCtx) return;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (AC) audioCtx = new AC();
+}
+
+function playEat() {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'square';
+  osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(900, audioCtx.currentTime + 0.08);
+  gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.12);
+}
+
+// ---------- Искры ----------
+function spawnParticles(cx, cy, colors, count) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speedP = 1 + Math.random() * 2.5;
+    particles.push({
+      x: cx,
+      y: cy,
+      vx: Math.cos(angle) * speedP,
+      vy: Math.sin(angle) * speedP,
+      life: 1,
+      color: colors[Math.floor(Math.random() * colors.length)],
+    });
+  }
+}
+
+// ---------- Сообщение над полем ----------
+function showNotice(text) {
+  unlockEl.textContent = text;
+  unlockEl.style.opacity = 1;
+  clearTimeout(noticeTimeout);
+  noticeTimeout = setTimeout(() => { unlockEl.style.opacity = 0; }, 2800);
+}
+
+// ---------- Игровой цикл ----------
+// Интервал между шагами: при замедлении змейка ходит медленнее
+function currentInterval() {
+  return speed * (slowSteps > 0 ? SLOW_FACTOR : 1);
+}
+
+function startLoop() {
+  clearInterval(timer);
+  timer = setInterval(step, currentInterval());
+}
+
+function eatBonus() {
+  const cx = (bonus.x + 1) * CELL;
+  const cy = (bonus.y + 1) * CELL;
+  const reward = BONUSES[Math.floor(Math.random() * BONUSES.length)];
+  bonus = null;
+
+  spawnParticles(cx, cy, ['#ffd166', '#fff3b0', '#ffc400'], 24);
+  if (unlocked(12)) playEat();
+
+  let extra = [];
+  if (reward.id === 'points') {
+    extra = describe(addScore(5));
+  } else if (reward.id === 'slow') {
+    slowSteps = SLOW_STEPS;
+    startLoop();
+  } else if (reward.id === 'wrap') {
+    wrapSteps = WRAP_STEPS;
+  } else if (reward.id === 'shrink') {
+    // Укорачиваем змейку, но оставляем минимум 3 сегмента
+    snake.length = Math.max(3, snake.length - 3);
+  }
+
+  let message = 'Золотое яблоко: ' + reward.text;
+  if (extra.length) message += ' | ' + extra.join(' | ');
+  showNotice(message);
+}
+
+function step() {
+  direction = nextDirection;
+
+  // Новая позиция головы
+  const head = {
+    x: snake[0].x + direction.x,
+    y: snake[0].y + direction.y,
+  };
+
+  // Пока действует «проход сквозь стены», змейка появляется с другой стороны поля
+  if (wrapSteps > 0) {
+    head.x = (head.x + GRID) % GRID;
+    head.y = (head.y + GRID) % GRID;
+  }
+
+  // Столкновение со стеной
+  const hitWall = head.x < 0 || head.x >= GRID || head.y < 0 || head.y >= GRID;
+  // Столкновение с собой
+  const hitSelf = snake.some(part => part.x === head.x && part.y === head.y);
+
+  if (hitWall || hitSelf) {
+    gameOver();
+    return;
+  }
+
+  snake.unshift(head); // добавляем новую голову
+  let grew = false;    // выросла ли змейка на этом шаге
+
+  if (head.x === food.x && head.y === food.y) {
+    // Съели обычное яблоко
+    grew = true;
+    const eatenX = food.x * CELL + CELL / 2;
+    const eatenY = food.y * CELL + CELL / 2;
+
+    const parts = describe(addScore(1));
+    if (parts.length) showNotice(parts.join(' | '));
+
+    if (unlocked(7)) spawnParticles(eatenX, eatenY, ['#ffd166', '#ff6b6b'], 14);
+    if (unlocked(12)) playEat();
+
+    placeFood();
+
+    // Шанс появления золотого яблока (если оно уже лежит на поле — второе не создаём)
+    if (!bonus && Math.random() < BONUS_CHANCE) spawnBonus();
+  }
+
+  if (inBonus(head)) {
+    // Съели золотое яблоко
+    grew = true;
+    eatBonus();
+  }
+
+  if (!grew) snake.pop(); // убираем хвост, змейка просто двигается
+
+  // Таймеры: золотое яблоко и эффекты считаются в шагах, поэтому на паузе они замирают
+  if (bonus) {
+    bonus.life--;
+    if (bonus.life <= 0) bonus = null;
+  }
+  if (wrapSteps > 0) wrapSteps--;
+  if (slowSteps > 0) {
+    slowSteps--;
+    if (slowSteps === 0) startLoop(); // вернуть обычную скорость
+  }
+}
+
+function gameOver() {
+  clearInterval(timer);
+  state = 'over';
+  if (score <= 0) return;
+
+  // Сначала обновляем таблицу с сервера, чтобы честно понять, попал ли результат в топ-10
+  const id = gameId;
+  fetchScores().then(() => {
+    // Если игрок уже начал новую партию, окно имени не показываем
+    if (id === gameId && state === 'over' && qualifies(score)) openNameBox();
+  });
+}
+
+// ---------- Отрисовка ----------
+function drawBackground() {
+  const b = biome();
+  const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  grad.addColorStop(0, b.bg[0]);
+  grad.addColorStop(1, b.bg[1]);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  canvas.style.borderColor = b.border;
+}
+
+function drawBoardPattern() {
+  // Шахматная раскраска поля
+  ctx.fillStyle = biome().checker;
+  for (let x = 0; x < GRID; x++) {
+    for (let y = 0; y < GRID; y++) {
+      if ((x + y) % 2 === 0) ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+    }
+  }
+}
+
+// Летающие частицы фона: у каждой темы своя, едва заметная «погода»
+function drawAmbient(t) {
+  const type = biome().ambient;
+  if (type === 'none') return;
+
+  ambient.forEach(p => {
+    if (type === 'snow') {
+      p.y += 0.4 + p.size * 0.2;
+      p.x += Math.sin(t / 700 + p.phase) * 0.3;
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    } else if (type === 'leaves') {
+      p.y += 0.3 + p.size * 0.15;
+      p.x += Math.sin(t / 900 + p.phase) * 0.35;
+      ctx.fillStyle = 'rgba(150,190,110,0.3)';
+    } else if (type === 'sand') {
+      p.x += 0.6 + p.size * 0.2;
+      p.y += Math.sin(t / 600 + p.phase) * 0.2;
+      ctx.fillStyle = 'rgba(255,225,170,0.25)';
+    } else if (type === 'bubbles') {
+      p.y -= 0.35 + p.size * 0.15;
+      p.x += Math.sin(t / 800 + p.phase) * 0.25;
+      ctx.fillStyle = 'rgba(200,240,255,0.28)';
+    } else if (type === 'space') {
+      ctx.fillStyle = 'rgba(210,200,255,' + (0.1 + 0.35 * Math.abs(Math.sin(t / 500 + p.phase))) + ')';
+    }
+
+    // Вылетела за край — появляется с другой стороны
+    if (p.y > canvas.height) p.y = 0;
+    if (p.y < 0) p.y = canvas.height;
+    if (p.x > canvas.width) p.x = 0;
+    if (p.x < 0) p.x = canvas.width;
+
+    ctx.fillRect(p.x, p.y, p.size, p.size);
+  });
+}
+
+function drawStars(t) {
+  stars.forEach(s => {
+    const alpha = 0.15 + 0.4 * Math.abs(Math.sin(t / 600 + s.phase));
+    ctx.fillStyle = 'rgba(255, 255, 255, ' + alpha + ')';
+    ctx.fillRect(s.x, s.y, s.size, s.size);
+  });
+}
+
+function drawFood(t) {
+  const cx = food.x * CELL + CELL / 2;
+  const cy = food.y * CELL + CELL / 2;
+  const pulse = unlocked(9) ? 1 + 0.12 * Math.sin(t / 150) : 1;
+  const r = (CELL / 2 - 2) * pulse;
+
+  // Яркое светлое яблоко с мягким свечением, чтобы выделяться на любом фоне
+  ctx.shadowColor = 'rgba(255, 130, 130, 0.9)';
+  ctx.shadowBlur = 10;
+  const grad = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.1, cx, cy, r);
+  grad.addColorStop(0, '#ffc2c2');
+  grad.addColorStop(0.55, '#ff5d68');
+  grad.addColorStop(1, '#f23a4c');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.shadowColor = 'transparent';
+
+  if (unlocked(5)) {
+    // Листик
+    ctx.fillStyle = '#7be495';
+    ctx.beginPath();
+    ctx.ellipse(cx + 3, cy - r - 1, 4, 2, -0.6, 0, Math.PI * 2);
+    ctx.fill();
+    // Блик
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.beginPath();
+    ctx.arc(cx - r * 0.35, cy - r * 0.35, r * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawBonus(t) {
+  if (!bonus) return;
+
+  // Когда яблоко скоро исчезнет, оно мигает
+  const fading = bonus.life < 14;
+  if (fading && Math.floor(t / 130) % 2 === 0) ctx.globalAlpha = 0.35;
+
+  // Центр области 2x2
+  const cx = (bonus.x + 1) * CELL;
+  const cy = (bonus.y + 1) * CELL;
+  const r = CELL * 0.85 * (1 + 0.06 * Math.sin(t / 200));
+
+  // Золотое яблоко со свечением
+  ctx.shadowColor = '#ffd166';
+  ctx.shadowBlur = 18;
+  const grad = ctx.createRadialGradient(cx - 5, cy - 5, 2, cx, cy, r);
+  grad.addColorStop(0, '#fff3b0');
+  grad.addColorStop(0.5, '#ffc400');
+  grad.addColorStop(1, '#e08e00');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.shadowColor = 'transparent';
+
+  // Листик
+  ctx.fillStyle = '#53d769';
+  ctx.beginPath();
+  ctx.ellipse(cx + 6, cy - r - 1, 6, 3, -0.6, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Звезда в центре
+  ctx.fillStyle = 'rgba(120, 70, 0, 0.8)';
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 18px system-ui, sans-serif';
+  ctx.fillText('★', cx, cy + 6);
+
+  // Кольцо-таймер: сколько осталось времени до исчезновения
+  ctx.strokeStyle = '#ffd166';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r + 4, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (bonus.life / bonus.max));
+  ctx.stroke();
+
+  ctx.globalAlpha = 1;
+}
+
+function snakeColor(i, t) {
+  const hue = biome().hue;
+  if (unlocked(10)) {
+    // Радуга: цвет зависит от номера сегмента и времени, поэтому переливается
+    return 'hsl(' + ((i * 18 + t / 10) % 360) + ', 80%, 55%)';
+  }
+  if (i === 0) return 'hsl(' + hue + ', 65%, 62%)';
+  if (unlocked(3)) {
+    // Градиент: к хвосту сегменты темнее
+    const lightness = 54 - 18 * (i / snake.length);
+    return 'hsl(' + hue + ', 60%, ' + lightness + '%)';
+  }
+  return 'hsl(' + hue + ', 60%, 48%)';
+}
+
+function drawSnake(t) {
+  if (unlocked(4)) {
+    ctx.shadowColor = 'hsl(' + biome().hue + ', 70%, 55%)';
+    ctx.shadowBlur = 12;
+  }
+
+  // Рисуем с хвоста, чтобы голова оказалась сверху
+  for (let i = snake.length - 1; i >= 0; i--) {
+    const part = snake[i];
+    const x = part.x * CELL + 1;
+    const y = part.y * CELL + 1;
+    const size = CELL - 2;
+
+    ctx.fillStyle = snakeColor(i, t);
+    if (unlocked(6) && ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(x, y, size, size, 7);
+      ctx.fill();
+    } else {
+      ctx.fillRect(x, y, size, size);
+    }
+  }
+
+  ctx.shadowBlur = 0;
+  ctx.shadowColor = 'transparent';
+
+  const head = snake[0];
+  const cx = head.x * CELL + CELL / 2;
+  const cy = head.y * CELL + CELL / 2;
+
+  if (unlocked(11) && Math.floor(t / 300) % 2 === 0) {
+    // Язычок вылезает вперёд и убирается
+    const tx = cx + direction.x * 10;
+    const ty = cy + direction.y * 10;
+    ctx.strokeStyle = '#e94560';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(tx, ty);
+    ctx.lineTo(tx + direction.x * 5, ty + direction.y * 5);
+    ctx.stroke();
+  }
+
+  if (unlocked(1)) {
+    // Два глаза по бокам от направления движения
+    const sideX = -direction.y;
+    const sideY = direction.x;
+    [-1, 1].forEach(side => {
+      const ex = cx + direction.x * 3 + sideX * 4 * side;
+      const ey = cy + direction.y * 3 + sideY * 4 * side;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(ex, ey, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#111';
+      ctx.beginPath();
+      ctx.arc(ex + direction.x, ey + direction.y, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+}
+
+function drawParticles() {
+  particles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life -= 0.03;
+    ctx.globalAlpha = Math.max(p.life, 0);
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x, p.y, 3, 3);
+  });
+  ctx.globalAlpha = 1;
+  particles = particles.filter(p => p.life > 0);
+}
+
+// Эффекты слева сверху, название биома справа сверху
+function drawHud() {
+  const lines = [];
+  if (slowSteps > 0) {
+    lines.push('Замедление: ' + Math.ceil(slowSteps * currentInterval() / 1000) + ' с');
+  }
+  if (wrapSteps > 0) {
+    lines.push('Сквозь стены: ' + Math.ceil(wrapSteps * currentInterval() / 1000) + ' с');
+  }
+  ctx.textAlign = 'left';
+  ctx.font = 'bold 13px system-ui, sans-serif';
+  ctx.fillStyle = '#ffd166';
+  lines.forEach((line, i) => ctx.fillText(line, 8, 18 + i * 17));
+
+  ctx.textAlign = 'right';
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fillText(biome().name, canvas.width - 8, 16);
+}
+
+function showMessage(text, subtext) {
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 22px system-ui, sans-serif';
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2 - 40);
+  if (subtext) {
+    ctx.font = '16px system-ui, sans-serif';
+    ctx.fillText(subtext, canvas.width / 2, canvas.height / 2 - 12);
+  }
+}
+
+function render(t) {
+  drawBackground();
+  drawAmbient(t);
+
+  if (unlocked(2)) drawBoardPattern();
+  if (unlocked(8)) drawStars(t);
+
+  drawFood(t);
+  drawBonus(t);
+  drawSnake(t);
+  drawParticles();
+
+  // Вспышка при смене биома
+  if (flash > 0) {
+    ctx.fillStyle = 'rgba(255,255,255,' + (flash * 0.3) + ')';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    flash = Math.max(0, flash - 0.04);
+  }
+
+  drawHud();
+
+  if (state === 'ready') showMessage('Нажмите Пробел или коснитесь поля');
+  if (state === 'paused') showMessage('Пауза');
+  if (state === 'over') {
+    showMessage(
+      'Игра окончена. Счёт: ' + score,
+      pendingName ? 'Введите имя ниже' : 'Пробел — играть снова'
+    );
+  }
+}
+
+// Отрисовка идёт отдельно от шагов змейки: так анимации (блеск, искры, радуга) остаются плавными
+function frame(t) {
+  render(t);
+  requestAnimationFrame(frame);
+}
+
+// ---------- Управление ----------
+function turn(dx, dy) {
+  // Нельзя развернуться на 180 градусов (в саму себя)
+  if (dx === -direction.x && dy === -direction.y) return;
+  nextDirection = { x: dx, y: dy };
+}
+
+// Старт / пауза / новая игра (общая для клавиатуры, касаний и кнопок)
+function toggleGame() {
+  if (pendingName) return; // сначала сохраните имя или пропустите
+  initAudio();
+
+  if (state === 'ready' || state === 'over') {
+    resetGame();
+    state = 'running';
+    startLoop();
+  } else if (state === 'running') {
+    state = 'paused';
+    clearInterval(timer);
+  } else if (state === 'paused') {
+    state = 'running';
+    startLoop();
+  }
+  updatePadButton();
+}
+
+function updatePadButton() {
+  const btn = document.getElementById('padToggle');
+  btn.textContent = state === 'running' ? 'Пауза' : (state === 'paused' ? 'Дальше' : 'Пуск');
+}
+
+// Клавиатура
+document.addEventListener('keydown', (e) => {
+  // Пока печатаем имя, игровые клавиши не работают
+  if (e.target && e.target.tagName === 'INPUT') return;
+
+  const key = e.key.toLowerCase();
+
+  if (key === ' ') {
+    e.preventDefault();
+    toggleGame();
+    return;
+  }
+
+  if (state !== 'running') return;
+
+  if (key === 'arrowup' || key === 'w' || key === 'ц') turn(0, -1);
+  if (key === 'arrowdown' || key === 's' || key === 'ы') turn(0, 1);
+  if (key === 'arrowleft' || key === 'a' || key === 'ф') turn(-1, 0);
+  if (key === 'arrowright' || key === 'd' || key === 'в') turn(1, 0);
+
+  if (key.startsWith('arrow')) e.preventDefault(); // чтобы страница не прокручивалась
+});
+
+// Свайпы по полю: короткое касание без движения — пауза / старт
+let touchStart = null;
+const SWIPE_DISTANCE = 24;
+
+canvas.addEventListener('touchstart', (e) => {
+  const t = e.touches[0];
+  touchStart = { x: t.clientX, y: t.clientY, moved: false };
+  e.preventDefault();
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+  if (!touchStart) return;
+  const t = e.touches[0];
+  const dx = t.clientX - touchStart.x;
+  const dy = t.clientY - touchStart.y;
+
+  if (Math.max(Math.abs(dx), Math.abs(dy)) >= SWIPE_DISTANCE) {
+    if (state === 'running') {
+      if (Math.abs(dx) > Math.abs(dy)) turn(dx > 0 ? 1 : -1, 0);
+      else turn(0, dy > 0 ? 1 : -1);
+    }
+    // Начинаем отсчёт заново, чтобы можно было свайпать несколько раз подряд, не отрывая палец
+    touchStart.x = t.clientX;
+    touchStart.y = t.clientY;
+    touchStart.moved = true;
+  }
+  e.preventDefault();
+}, { passive: false });
+
+canvas.addEventListener('touchend', (e) => {
+  if (touchStart && !touchStart.moved) toggleGame();
+  touchStart = null;
+  e.preventDefault();
+}, { passive: false });
+
+canvas.addEventListener('touchcancel', () => { touchStart = null; });
+
+// Экранные кнопки
+document.querySelectorAll('#pad button[data-dx]').forEach(btn => {
+  btn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    if (state === 'running') turn(Number(btn.dataset.dx), Number(btn.dataset.dy));
+  });
+});
+document.getElementById('padToggle').addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  toggleGame();
+});
+
+// ---------- Выбор темы ----------
+const themesEl = document.getElementById('themes');
+
+function renderThemeButtons() {
+  themesEl.innerHTML = '';
+  THEMES.concat([AUTO_THEME]).forEach(th => {
+    const btn = document.createElement('button');
+    btn.textContent = th.icon + ' ' + th.name;
+    btn.title = th.id === 'auto' ? 'Тема меняется каждые ' + BIOME_EVERY + ' очков' : th.name;
+    if (th.id === themeId) btn.className = 'active';
+    btn.addEventListener('click', () => {
+      themeId = th.id;
+      save('snakeTheme', themeId);
+      renderThemeButtons(); // перерисовка снимает фокус с кнопки, чтобы Пробел не нажимал её снова
+    });
+    themesEl.appendChild(btn);
+  });
+}
+
+// ---------- Старт ----------
+renderThemeButtons();
+resetGame();
+state = 'ready';
+updatePadButton();
+requestAnimationFrame(frame);
+fetchScores(); // загружаем общую таблицу рекордов
+</script>
+</body>
+</html>
