@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-<title>Змейка</title>
+<title>Мини-игры</title>
 <style>
   * { box-sizing: border-box; }
   body {
     margin: 0;
     min-height: 100vh;
-    padding: 12px 0 24px;
+    padding: 20px 16px 28px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     background: #1a1a2e;
     transition: background-color 0.6s ease;
     color: #eee;
@@ -27,9 +27,9 @@
     text-transform: uppercase;
     color: #ffd166;
   }
-  #info { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 8px; font-size: 14px; }
-  #info .chip { padding: 5px 12px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 999px; }
-  #info b { margin-left: 2px; font-size: 16px; font-variant-numeric: tabular-nums; }
+  #info, .info-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 8px; font-size: 14px; }
+  .chip { padding: 5px 12px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 999px; }
+  .chip b { margin-left: 2px; font-size: 16px; font-variant-numeric: tabular-nums; }
   #unlock {
     height: 24px;
     margin-bottom: 6px;
@@ -41,7 +41,7 @@
   }
 
   /* Поле + окно ввода имени */
-  #wrap { position: relative; width: min(406px, 94vw); }
+  #wrap { position: relative; width: min(406px, 100%); }
   canvas {
     display: block;
     width: 100%;
@@ -114,7 +114,7 @@
   @media (pointer: coarse) { #pad { display: grid; } }
 
   /* Выбор темы */
-  #themes { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 10px; width: min(420px, 96vw); }
+  #themes { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 10px; width: min(420px, 100%); }
   #themes button { padding: 6px 12px; font-size: 13px; border-radius: 999px; background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); }
   #themes button:hover { background: rgba(255,255,255,0.12); }
   #themes button.active { background: rgba(255, 209, 102, 0.14); border-color: #ffd166; color: #ffd166; }
@@ -124,7 +124,7 @@
   /* Таблица рекордов */
   #board {
     margin-top: 18px;
-    width: min(340px, 94vw);
+    width: min(340px, 100%);
     padding: 14px 18px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -144,11 +144,167 @@
   #scoreList li:nth-child(3)::marker { color: #d9a066; font-weight: bold; }
   #scoreList li.empty { list-style: none; margin-left: -26px; text-align: center; opacity: 0.6; }
   #refreshBtn { display: block; margin: 10px auto 0; font-size: 12px; opacity: 0.8; }
+
+  /* ===== Мини-игры: меню, общая шапка, элементы управления ===== */
+  [hidden] { display: none !important; }
+  .view { display: none; width: 100%; flex-direction: column; align-items: center; }
+  .view.active { display: flex; }
+
+  #bar { display: flex; width: min(460px, 100%); align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+  #bar.menu #backBtn { visibility: hidden; }
+  #bar h1 { flex: 1; min-width: 0; margin: 0; font-size: 17px; letter-spacing: 0.06em; text-align: center; white-space: nowrap; }
+  #bar .spacer { width: 88px; }
+  #backBtn, #lbBtn { width: 88px; padding: 7px 10px; font-size: 13px; }
+  #lbBtn.active { border-color: #ffd166; color: #ffd166; background: rgba(255, 209, 102, 0.14); }
+  .lb-name { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 13px; opacity: 0.9; }
+  .lb-name input { width: 140px; padding: 6px 10px; font-size: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); color: inherit; }
+  .lb-note { max-width: 340px; margin: 10px 0 0; font-size: 12px; opacity: 0.55; text-align: center; }
+  #scoreList li.me { color: #ffd166; }
+  #scoreList { padding-right: 4px; }
+
+  .menu-title { margin: 8px 0 4px; font-size: 28px; }
+  .menu-sub { margin: 0 0 18px; font-size: 14px; opacity: 0.65; }
+  .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; width: min(640px, 100%); }
+  .game-card {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+    padding: 16px; text-align: left; border-radius: 16px;
+    background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background-color 0.15s ease, transform 0.15s ease;
+  }
+  .game-card:hover { background: rgba(255, 255, 255, 0.11); transform: translateY(-2px); }
+  .game-card .ico { font-size: 30px; line-height: 1; }
+  .game-card .nm { font-size: 17px; font-weight: 700; }
+  .game-card .ds { font-size: 13px; opacity: 0.7; }
+  .game-card .st { min-height: 15px; font-size: 12px; color: #ffd166; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 12px; width: min(460px, 100%); }
+  .chips button { padding: 6px 12px; font-size: 13px; border-radius: 999px; background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); }
+  .chips button:hover { background: rgba(255,255,255,0.12); }
+  .chips button.active { background: rgba(255, 209, 102, 0.14); border-color: #ffd166; color: #ffd166; }
+
+  .status { min-height: 24px; margin: 10px 0; font-size: 16px; text-align: center; }
+  .stats { margin: 10px 0 12px; font-size: 13px; opacity: 0.7; text-align: center; }
+  .hint { margin: 12px 8px 0; font-size: 13px; opacity: 0.7; text-align: center; max-width: 440px; }
+  .info-row { margin-bottom: 10px; }
+
+  /* Крестики-нолики */
+  .ttt-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: min(330px, 100%); }
+  .ttt-cell { aspect-ratio: 1; padding: 0; font-size: 52px; line-height: 1; border-radius: 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); }
+  .ttt-cell.x { color: #ffd166; }
+  .ttt-cell.o { color: #5ad1c4; }
+  .ttt-cell.win { background: rgba(255, 209, 102, 0.2); border-color: #ffd166; animation: winPulse 0.6s ease-in-out 2; }
+  .ttt-cell.placed { animation: markIn 0.22s ease-out; }
+  .ttt-cell.win.placed { animation: markIn 0.22s ease-out, winPulse 0.6s ease-in-out 0.22s 2; }
+  @keyframes markIn { from { transform: scale(0.3) rotate(-25deg); opacity: 0; } to { transform: scale(1) rotate(0); opacity: 1; } }
+  @keyframes winPulse { 50% { transform: scale(1.08); } }
+
+  /* 2048 */
+  .board48-wrap { position: relative; width: min(400px, 100%); margin-bottom: 14px; }
+  .board48 { position: relative; aspect-ratio: 1; padding: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .g48-bg { position: absolute; inset: 8px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .g48-bg i { background: rgba(255,255,255,0.05); border-radius: 10px; }
+  .g48-tiles { position: absolute; inset: 8px; }
+  .tile {
+    --r: 0; --c: 0;
+    position: absolute; top: 0; left: 0;
+    width: calc((100% - 24px) / 4); aspect-ratio: 1;
+    transform: translate(calc(var(--c) * (100% + 8px)), calc(var(--r) * (100% + 8px)));
+    transition: transform 0.12s ease-out;
+  }
+  .tile .in { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-weight: 800; color: #eef2ff; font-variant-numeric: tabular-nums; }
+  .tile .in.new { animation: appear 0.2s ease-out 0.1s backwards; }
+  .tile .in.merge { animation: pop 0.2s ease-out; }
+  @keyframes appear { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.18); } 100% { transform: scale(1); } }
+  .score-pop { position: absolute; top: 12px; right: 16px; font-size: 18px; font-weight: 800; color: #ffd166; pointer-events: none; animation: floatUp 0.7s ease-out forwards; }
+  @keyframes floatUp { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-26px); } }
+  .t2 { background: #3b4a6b; }
+  .t4 { background: #3f6591; }
+  .t8 { background: #2f8f9d; }
+  .t16 { background: #2fa37a; }
+  .t32 { background: #7cb342; color: #14210a; }
+  .t64 { background: #c0b53a; color: #231f05; }
+  .t128 { background: #e8a93a; color: #2a1c04; }
+  .t256 { background: #ee8a3a; color: #2a1404; }
+  .t512 { background: #e8603a; }
+  .t1024 { background: #d9455a; }
+  .t2048 { background: #ffd166; color: #2a2004; box-shadow: 0 0 18px rgba(255, 209, 102, 0.6); }
+  .tbig { background: #ff8fd0; color: #2a0a1e; }
+  .overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 16px; text-align: center; background: rgba(10, 12, 26, 0.8); border-radius: 14px; }
+  .overlay { animation: fadeIn 0.25s ease-out; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .overlay h2 { margin: 0; font-size: 22px; }
+  .overlay .btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+
+  /* Сапёр */
+  .mines-head { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 10px; }
+  .face { padding: 4px 12px; font-size: 22px; }
+  .mines-grid { display: grid; gap: 2px; padding: 6px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+  .mcell { width: var(--cs, 30px); height: var(--cs, 30px); padding: 0; display: flex; align-items: center; justify-content: center; font-size: calc(var(--cs, 30px) * 0.55); font-weight: 800; line-height: 1; border-radius: 5px; background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.12); }
+  .mcell:hover { background: rgba(255,255,255,0.24); }
+  .mcell.open { background: rgba(0,0,0,0.25); border-color: transparent; cursor: default; }
+  .mcell.boom { background: #b3262e; animation: boom 0.4s ease-out; }
+  .mcell.reveal { animation: reveal 0.22s ease-out backwards; }
+  .mcell.mine-show { animation: reveal 0.25s ease-out backwards; }
+  .mcell.flagged { animation: flagDrop 0.2s ease-out; }
+  @keyframes reveal { from { transform: scale(0.5); opacity: 0.2; } to { transform: scale(1); opacity: 1; } }
+  @keyframes flagDrop { from { transform: scale(1.5); } to { transform: scale(1); } }
+  @keyframes boom { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
+  .mines-grid.shake { animation: shake 0.4s ease-in-out; }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+  .face.bounce { animation: bounce 0.4s ease-out; }
+  @keyframes bounce { 40% { transform: scale(1.35) rotate(-8deg); } }
+  .mcell.wrong { background: rgba(179, 38, 46, 0.4); }
+  .n1 { color: #6aa9ff; } .n2 { color: #5fd08a; } .n3 { color: #ff7a7a; } .n4 { color: #b08cff; }
+  .n5 { color: #ff9f5a; } .n6 { color: #4fd1d1; } .n7 { color: #ddd; } .n8 { color: #aaa; }
+  #minesFlagMode { margin-top: 12px; }
+  #minesFlagMode.active { border-color: #ffd166; color: #ffd166; background: rgba(255, 209, 102, 0.14); }
+
+  /* Память */
+  .mem-grid { display: grid; gap: 8px; width: min(440px, 100%); margin-bottom: 4px; }
+  .mem-card { aspect-ratio: 1; padding: 0; background: none; border: none; perspective: 600px; }
+  .mem-card:hover { background: none; }
+  .mc-inner { position: relative; display: block; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 0.35s ease; }
+  .mem-card.open .mc-inner, .mem-card.done .mc-inner { transform: rotateY(180deg); }
+  .mc-face { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px; border: 1px solid; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+  .mc-back { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.14); color: rgba(255,255,255,0.3); }
+  .mem-card:hover .mc-back { background: rgba(255,255,255,0.16); }
+  .mc-front { transform: rotateY(180deg); background: rgba(255, 209, 102, 0.14); border-color: #ffd166; color: #fff; }
+  .mem-card.done .mc-front { background: rgba(90, 209, 196, 0.16); border-color: #5ad1c4; }
+  .mem-card.done { cursor: default; animation: matchPop 0.4s ease-out 0.3s; }
+  .mem-card.miss { animation: missShake 0.35s ease-in-out 0.35s; }
+  @keyframes matchPop { 50% { transform: scale(1.1); } }
+  @keyframes missShake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+  .status.celebrate { color: #ffd166; font-weight: 700; animation: statusPop 0.5s ease-out; }
+  @keyframes statusPop { from { transform: scale(0.8); opacity: 0; } 60% { transform: scale(1.1); } to { transform: scale(1); opacity: 1; } }
+
+  /* Плавное появление экранов и карточек меню */
+  .view.active { animation: viewIn 0.25s ease-out; }
+  @keyframes viewIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .game-card { animation: cardIn 0.35s ease-out backwards; animation-delay: calc(var(--i, 0) * 60ms); }
+  @keyframes cardIn { from { opacity: 0; transform: translateY(12px); } }
+
+  /* Если в системе включено «уменьшение движения», анимации отключаются */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0s !important; transition-duration: 0.01ms !important; }
+  }
 </style>
 </head>
 <body>
 
-<h1>Змейка</h1>
+<header id="bar">
+  <button id="backBtn" type="button">← Меню</button>
+  <h1 id="gameTitle"></h1>
+  <button id="lbBtn" type="button" aria-label="Таблица лидеров">🏆 Топ</button>
+</header>
+
+<section id="view-menu" class="view">
+  <h1 class="menu-title">Мини-игры</h1>
+  <p class="menu-sub">Выберите игру</p>
+  <div id="menuGrid" class="menu-grid"></div>
+</section>
+
+<section id="view-snake" class="view">
 <div id="info">
   <span class="chip">Счёт <b id="score">0</b></span>
   <span class="chip">Рекорд <b id="best">0</b></span>
@@ -184,14 +340,74 @@
   Тему фона можно выбрать кнопками над полем.
 </div>
 
+</section>
+
+<section id="view-lb" class="view">
+  <div class="lb-name"><label for="lbName">Ваше имя</label><input id="lbName" maxlength="12" placeholder="Игрок" autocomplete="off"></div>
+  <div class="chips" id="lbGames"></div>
+  <div class="chips" id="lbLevels"></div>
 <div id="board">
-  <h3>Таблица рекордов</h3>
+  <h3>Таблица лидеров</h3>
   <div id="boardStatus"></div>
   <ol id="scoreList"></ol>
   <button id="refreshBtn">Обновить</button>
 </div>
+  <p class="lb-note">В каждой игре с одного устройства (и одного IP-адреса) в таблице может быть только один результат — лучший.</p>
+</section>
+
+<section id="view-ttt" class="view">
+  <div class="chips" id="tttModes"></div>
+  <div class="status" id="tttStatus"></div>
+  <div class="ttt-board" id="tttBoard"></div>
+  <div class="stats" id="tttStats"></div>
+  <button id="tttNew" type="button">Новая партия</button>
+</section>
+
+<section id="view-2048" class="view">
+  <div class="info-row">
+    <span class="chip">Счёт <b id="g48Score">0</b></span>
+    <span class="chip">Рекорд <b id="g48Best">0</b></span>
+  </div>
+  <div class="board48-wrap">
+    <div class="board48" id="g48Board">
+      <div class="g48-bg" id="g48Bg"></div>
+      <div class="g48-tiles" id="g48Tiles"></div>
+    </div>
+    <div class="overlay" id="g48Overlay" hidden></div>
+  </div>
+  <button id="g48New" type="button">Новая игра</button>
+  <p class="hint">Стрелки, WASD или свайп по полю. Одинаковые плитки сливаются. Цель: собрать 2048.</p>
+</section>
+
+<section id="view-mines" class="view">
+  <div class="chips" id="minesLevels"></div>
+  <div class="mines-head">
+    <span class="chip">💣 <b id="minesLeft">0</b></span>
+    <button id="minesFace" class="face" type="button" aria-label="Новая игра">🙂</button>
+    <span class="chip">⏱ <b id="minesTime">0</b></span>
+  </div>
+  <div class="mines-grid" id="minesGrid"></div>
+  <button id="minesFlagMode" type="button">🚩 Режим флажка: выкл</button>
+  <div class="status" id="minesStatus"></div>
+  <p class="hint">Клик открывает клетку, правый клик (или режим флажка на телефоне) ставит флажок. Клик по числу с нужным количеством флажков открывает соседние клетки. Первая клетка всегда безопасна.</p>
+</section>
+
+<section id="view-memory" class="view">
+  <div class="chips" id="memLevels"></div>
+  <div class="info-row">
+    <span class="chip">Ходы <b id="memMoves">0</b></span>
+    <span class="chip">Время <b id="memTime">0:00</b></span>
+    <span class="chip">Лучший <b id="memBest">—</b></span>
+  </div>
+  <div class="mem-grid" id="memGrid"></div>
+  <div class="status" id="memStatus"></div>
+  <button id="memNew" type="button">Новая игра</button>
+</section>
 
 <script>
+let activeGame = 'menu';   // какая игра сейчас открыта: 'menu', 'snake', 'ttt', '2048', 'mines', 'memory'
+
+
 // ---------- Подключение к Supabase (общая таблица рекордов) ----------
 // Публичный (publishable) ключ можно хранить в коде страницы: доступ ограничен правилами таблицы.
 // Секретный ключ сюда вставлять нельзя.
@@ -296,7 +512,6 @@ let wrapSteps = 0;             // сколько шагов ещё можно п
 let flash = 0;                 // белая вспышка при смене биома
 let pendingName = false;       // ждём ввода имени для таблицы рекордов
 let saving = false;            // сейчас отправляем рекорд
-let lastRecordIndex = -1;      // позиция только что добавленного рекорда
 
 let particles = [];            // искры
 let noticeTimeout;
@@ -331,64 +546,18 @@ function save(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* хранилище недоступно */ }
 }
 
-// Рекорды, сохранённые на этом устройстве
-let localRecords = load('snakeScores', null);
-if (!Array.isArray(localRecords)) {
-  // Переносим старый одиночный рекорд, если он был
-  let old = 0;
-  try { old = Number(localStorage.getItem('snakeBest')) || 0; } catch (e) { /* ничего */ }
-  localRecords = old > 0 ? [{ name: 'Игрок', score: old, date: '' }] : [];
-  save('snakeScores', localRecords);
+// Личный рекорд змейки на этом устройстве (общий список теперь на вкладке «Топ»)
+if (load('snake_best', null) === null) {
+  let old = Number(load('snakeBest', 0)) || 0;
+  try { old = Math.max(old, Number(localStorage.getItem('snakeBest')) || 0); } catch (e) { /* ничего */ }
+  const list = load('snakeScores', []);
+  if (Array.isArray(list)) list.forEach(r => { if (r && r.score > old) old = r.score; });
+  save('snake_best', old);
+  save('snake_pub', old);   // лучший результат, который можно отправить в общую таблицу
 }
-
-// ---------- Таблица рекордов ----------
-let records = localRecords;    // то, что сейчас показано в таблице
-let online = false;            // удалось ли связаться с сервером
 
 function setStatus(text) {
   boardStatusEl.textContent = text;
-}
-
-function bestScore() {
-  return records.length ? records[0].score : 0;
-}
-
-function renderBoard() {
-  scoreListEl.innerHTML = '';
-  if (records.length === 0) {
-    const li = document.createElement('li');
-    li.className = 'empty';
-    li.textContent = 'Пока пусто — сыграйте!';
-    scoreListEl.appendChild(li);
-  }
-  records.forEach((r, i) => {
-    const li = document.createElement('li');
-    if (i === lastRecordIndex) li.className = 'new';
-
-    const row = document.createElement('div');
-    row.className = 'row';
-
-    const name = document.createElement('span');
-    name.className = 'name';
-    name.textContent = r.name;
-
-    const pts = document.createElement('span');
-    pts.className = 'pts';
-    pts.textContent = r.score;
-
-    row.appendChild(name);
-    row.appendChild(pts);
-
-    if (r.date) {
-      const date = document.createElement('small');
-      date.textContent = r.date;
-      row.appendChild(date);
-    }
-
-    li.appendChild(row);
-    scoreListEl.appendChild(li);
-  });
-  bestEl.textContent = bestScore();
 }
 
 // Запрос к серверу с ограничением по времени
@@ -404,75 +573,10 @@ async function request(url, options) {
   }
 }
 
-// Загружает топ-10 с сервера. Если сервер недоступен — показывает локальные рекорды.
-async function fetchScores() {
-  setStatus('Загрузка…');
-  try {
-    const url = SCORES_API +
-      '?select=name,score,created_at&order=score.desc,created_at.asc&limit=' + MAX_RECORDS;
-    const res = await request(url, { headers: API_HEADERS });
-    const rows = await res.json();
-    records = rows.map(r => ({
-      name: r.name,
-      score: r.score,
-      date: r.created_at ? new Date(r.created_at).toLocaleDateString('ru-RU') : '',
-    }));
-    online = true;
-    setStatus('Общая таблица: её видят все игроки');
-  } catch (e) {
-    records = localRecords;
-    online = false;
-    setStatus('Нет связи с сервером: рекорды хранятся только на этом устройстве');
-  }
-  renderBoard();
-}
-
-// Добавляет рекорд на сервер (или локально, если сервер недоступен)
-async function addRecord(name, points) {
-  if (online) {
-    try {
-      await request(SCORES_API, {
-        method: 'POST',
-        headers: Object.assign({}, API_HEADERS, {
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal',
-        }),
-        body: JSON.stringify({ name: name, score: points }),
-      });
-      await fetchScores();
-      lastRecordIndex = records.findIndex(r => r.name === name && r.score === points);
-      renderBoard();
-      return;
-    } catch (e) {
-      showNotice('Не удалось отправить рекорд на сервер, он сохранён на устройстве');
-    }
-  }
-
-  // Запасной вариант: сохраняем на этом устройстве
-  let pos = localRecords.findIndex(r => points > r.score);
-  if (pos === -1) pos = localRecords.length;
-  localRecords.splice(pos, 0, {
-    name: name,
-    score: points,
-    date: new Date().toLocaleDateString('ru-RU'),
-  });
-  localRecords = localRecords.slice(0, MAX_RECORDS);
-  save('snakeScores', localRecords);
-  records = localRecords;
-  lastRecordIndex = pos;
-  renderBoard();
-}
-
-// Попадает ли результат в таблицу
-function qualifies(s) {
-  if (s <= 0) return false;
-  return records.length < MAX_RECORDS || s > records[records.length - 1].score;
-}
-
 function openNameBox() {
   pendingName = true;
   nameScoreEl.textContent = score;
-  nameInput.value = load('snakeName', '');
+  nameInput.value = load('playerName', load('snakeName', ''));
   nameBox.style.display = 'block';
   setTimeout(() => nameInput.focus(), 50);
 }
@@ -490,8 +594,10 @@ async function saveName() {
   nameSaveBtn.textContent = 'Сохраняю…';
 
   const name = nameInput.value.trim().slice(0, 12) || 'Игрок';
-  save('snakeName', name);
-  await addRecord(name, score);
+  save('playerName', name);
+  save('snake_pub', Math.max(load('snake_pub', 0), score));
+  save('lb_sent', {});   // имя могло измениться: отправляем результаты заново
+  lbSchedule(0);
 
   saving = false;
   nameSaveBtn.disabled = false;
@@ -510,7 +616,7 @@ nameInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') saveName();
 });
 document.getElementById('refreshBtn').addEventListener('click', (e) => {
-  fetchScores();
+  lbLoad();
   e.currentTarget.blur();
 });
 
@@ -537,12 +643,11 @@ function resetGame() {
   slowSteps = 0;
   wrapSteps = 0;
   flash = 0;
-  lastRecordIndex = -1;
   particles = [];
   unlockEl.style.opacity = 0;
   closeNameBox();
   updateScoreboard();
-  renderBoard();
+  bestEl.textContent = load('snake_best', 0);
   placeFood();
 }
 
@@ -764,12 +869,12 @@ function gameOver() {
   state = 'over';
   if (score <= 0) return;
 
-  // Сначала обновляем таблицу с сервера, чтобы честно понять, попал ли результат в топ-10
-  const id = gameId;
-  fetchScores().then(() => {
-    // Если игрок уже начал новую партию, окно имени не показываем
-    if (id === gameId && state === 'over' && qualifies(score)) openNameBox();
-  });
+  // Новый личный рекорд: запоминаем и предлагаем записать имя для общей таблицы
+  if (score > load('snake_best', 0)) {
+    save('snake_best', score);
+    bestEl.textContent = score;
+    openNameBox();
+  }
 }
 
 // ---------- Отрисовка ----------
@@ -1122,7 +1227,7 @@ function render(t) {
 
 // Отрисовка идёт отдельно от шагов змейки: так анимации (блеск, искры, радуга) остаются плавными
 function frame(t) {
-  render(t);
+  if (activeGame === 'snake') render(t);
   requestAnimationFrame(frame);
 }
 
@@ -1159,6 +1264,7 @@ function updatePadButton() {
 
 // Клавиатура
 document.addEventListener('keydown', (e) => {
+  if (activeGame !== 'snake') return; // клавиши работают только в змейке
   // Пока печатаем имя, игровые клавиши не работают
   if (e.target && e.target.tagName === 'INPUT') return;
 
@@ -1254,7 +1360,1223 @@ resetGame();
 state = 'ready';
 updatePadButton();
 requestAnimationFrame(frame);
-fetchScores(); // загружаем общую таблицу рекордов
+
+// Вход в змейку и выход из неё (вызываются из меню)
+let snakeVisited = false;
+function enterSnake() {
+  lastThemeKey = null; // заново применить цвет страницы под тему
+  snakeVisited = true;
+  bestEl.textContent = load('snake_best', 0);
+}
+function pauseSnake() {
+  if (state === 'running') {
+    state = 'paused';
+    clearInterval(timer);
+    updatePadButton();
+  }
+}
+
+
+// =====================================================================
+//  ОБЩИЕ ПОМОЩНИКИ ДЛЯ ВСЕХ ИГР
+// =====================================================================
+const $ = id => document.getElementById(id);
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function el(tag, className, text) {
+  const e = document.createElement(tag);
+  if (className) e.className = className;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function formatTime(sec) {
+  return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+}
+
+// Кнопки-«чипы» для выбора режима или уровня
+function renderChips(container, options, current, onPick) {
+  container.innerHTML = '';
+  options.forEach(o => {
+    const b = el('button', o.id === current ? 'active' : '', o.label);
+    b.type = 'button';
+    b.addEventListener('click', () => onPick(o.id));
+    container.appendChild(b);
+  });
+}
+
+// =====================================================================
+//  КРЕСТИКИ-НОЛИКИ
+// =====================================================================
+const TTT_MODES = [
+  { id: 'easy',   label: 'Лёгкий' },
+  { id: 'medium', label: 'Средний' },
+  { id: 'hard',   label: 'Сложный' },
+  { id: 'two',    label: 'Вдвоём' },
+];
+const TTT_LINES = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
+const TTT_SYMBOL = { X: '✕', O: '○' };
+
+const ttt = {
+  board: Array(9).fill(''),
+  turn: 'X',
+  over: false,
+  busy: false,      // компьютер «думает», клики игнорируются
+  win: null,        // { who, line } у победителя
+  last: -1,         // последняя поставленная отметка (для анимации)
+  mode: load('ttt_mode', 'hard'),
+  timeout: null,
+  built: false,
+};
+if (!TTT_MODES.some(m => m.id === ttt.mode)) ttt.mode = 'hard';
+
+function tttWinner(b) {
+  for (const line of TTT_LINES) {
+    const [a, c, d] = line;
+    if (b[a] && b[a] === b[c] && b[a] === b[d]) return { who: b[a], line: line };
+  }
+  return null;
+}
+
+function tttFree(b) {
+  const free = [];
+  b.forEach((v, i) => { if (!v) free.push(i); });
+  return free;
+}
+
+// Минимакс: компьютер (O) максимизирует результат, человек (X) минимизирует
+function tttMinimax(b, turn, depth) {
+  const w = tttWinner(b);
+  if (w) return w.who === 'O' ? 10 - depth : depth - 10;
+  const free = tttFree(b);
+  if (!free.length) return 0;
+
+  let best = turn === 'O' ? -Infinity : Infinity;
+  for (const i of free) {
+    b[i] = turn;
+    const score = tttMinimax(b, turn === 'O' ? 'X' : 'O', depth + 1);
+    b[i] = '';
+    best = turn === 'O' ? Math.max(best, score) : Math.min(best, score);
+  }
+  return best;
+}
+
+// Выбор хода компьютера в зависимости от уровня
+function tttPickMove() {
+  const b = ttt.board.slice();
+  const free = tttFree(b);
+  const rand = arr => arr[Math.floor(Math.random() * arr.length)];
+
+  if (ttt.mode === 'easy') return rand(free);
+
+  // Средний и сложный: сначала выиграть, если можно, затем заблокировать выигрыш соперника
+  for (const who of ['O', 'X']) {
+    for (const i of free) {
+      b[i] = who;
+      const w = tttWinner(b);
+      b[i] = '';
+      if (w) return i;
+    }
+  }
+  if (ttt.mode === 'medium') return rand(free);
+
+  // Сложный: перебираем все варианты (минимакс), выбираем лучшие ходы
+  let best = -Infinity;
+  let moves = [];
+  for (const i of free) {
+    b[i] = 'O';
+    const score = tttMinimax(b, 'X', 1);
+    b[i] = '';
+    if (score > best) { best = score; moves = [i]; }
+    else if (score === best) moves.push(i);
+  }
+  return rand(moves);
+}
+
+function tttRecord(result) {
+  const key = 'ttt_stats_' + ttt.mode;
+  const s = load(key, { x: 0, d: 0, o: 0 });
+  if (result === 'X') s.x++;
+  else if (result === 'O') s.o++;
+  else s.d++;
+  save(key, s);
+}
+
+// Проверяет конец партии; true, если партия закончилась
+function tttCheckEnd() {
+  const w = tttWinner(ttt.board);
+  if (w) {
+    ttt.over = true;
+    ttt.win = w;
+    tttRecord(w.who);
+    return true;
+  }
+  if (!tttFree(ttt.board).length) {
+    ttt.over = true;
+    tttRecord('draw');
+    return true;
+  }
+  return false;
+}
+
+function tttPlay(i) {
+  if (ttt.over || ttt.busy || ttt.board[i]) return;
+  ttt.board[i] = ttt.turn;
+  ttt.last = i;
+
+  if (!tttCheckEnd()) {
+    ttt.turn = ttt.turn === 'X' ? 'O' : 'X';
+    if (ttt.mode !== 'two' && ttt.turn === 'O') {
+      ttt.busy = true;
+      ttt.timeout = setTimeout(() => {
+        ttt.busy = false;
+        const m = tttPickMove();
+        ttt.board[m] = 'O';
+        ttt.last = m;
+        if (!tttCheckEnd()) ttt.turn = 'X';
+        tttRender();
+      }, 400);
+    }
+  }
+  tttRender();
+}
+
+function tttNew() {
+  clearTimeout(ttt.timeout);
+  ttt.board = Array(9).fill('');
+  ttt.turn = 'X';
+  ttt.over = false;
+  ttt.busy = false;
+  ttt.win = null;
+  ttt.last = -1;
+  tttRender();
+}
+
+function tttRender() {
+  renderChips($('tttModes'), TTT_MODES, ttt.mode, id => {
+    ttt.mode = id;
+    save('ttt_mode', id);
+    tttNew();
+  });
+
+  const cells = $('tttBoard').children;
+  for (let i = 0; i < 9; i++) {
+    const v = ttt.board[i];
+    cells[i].textContent = v ? TTT_SYMBOL[v] : '';
+    cells[i].className = 'ttt-cell' + (v === 'X' ? ' x' : v === 'O' ? ' o' : '') +
+      (ttt.win && ttt.win.line.includes(i) ? ' win' : '') +
+      (i === ttt.last ? ' placed' : '');
+  }
+
+  const two = ttt.mode === 'two';
+  let status;
+  if (ttt.over) {
+    if (!ttt.win) status = 'Ничья';
+    else if (two) status = 'Победили ' + TTT_SYMBOL[ttt.win.who] + '!';
+    else status = ttt.win.who === 'X' ? 'Вы победили!' : 'Победил компьютер';
+  } else if (two) {
+    status = 'Ход: ' + TTT_SYMBOL[ttt.turn];
+  } else {
+    status = ttt.busy ? 'Компьютер думает…' : 'Ваш ход (' + TTT_SYMBOL.X + ')';
+  }
+  $('tttStatus').textContent = status;
+
+  const s = load('ttt_stats_' + ttt.mode, { x: 0, d: 0, o: 0 });
+  $('tttStats').textContent = two
+    ? TTT_SYMBOL.X + ': ' + s.x + ' · Ничьи: ' + s.d + ' · ' + TTT_SYMBOL.O + ': ' + s.o
+    : 'Вы: ' + s.x + ' · Ничьи: ' + s.d + ' · Компьютер: ' + s.o;
+}
+
+function tttEnter() {
+  if (!ttt.built) {
+    ttt.built = true;
+    const board = $('tttBoard');
+    for (let i = 0; i < 9; i++) {
+      const b = el('button', 'ttt-cell');
+      b.type = 'button';
+      b.setAttribute('aria-label', 'Клетка ' + (i + 1));
+      b.addEventListener('click', () => tttPlay(i));
+      board.appendChild(b);
+    }
+    $('tttNew').addEventListener('click', tttNew);
+  }
+  tttRender();
+}
+
+// =====================================================================
+//  2048
+// =====================================================================
+const G48_SLIDE_MS = 130;   // длительность скольжения плиток
+
+const g48 = {
+  cells: Array(16).fill(null),  // плитка в каждой клетке или null
+  tiles: [],                    // все плитки на поле (и те, что прямо сейчас сливаются)
+  nextId: 1,
+  score: 0,
+  best: load('g2048_best', 0),
+  over: false,
+  won: false,        // уже собрали 2048
+  keepGoing: false,  // игрок решил продолжать после 2048
+  cleanup: null,     // действие, которое выполняется после анимации скольжения
+  timer: null,
+  built: false,
+};
+
+// Для каждого направления: список линий, в каждой первая клетка — та, к которой плитки едут
+function g48Lines(dir) {
+  const lines = [];
+  for (let a = 0; a < 4; a++) {
+    const line = [];
+    for (let b = 0; b < 4; b++) {
+      if (dir === 'left')  line.push(a * 4 + b);
+      if (dir === 'right') line.push(a * 4 + (3 - b));
+      if (dir === 'up')    line.push(b * 4 + a);
+      if (dir === 'down')  line.push((3 - b) * 4 + a);
+    }
+    lines.push(line);
+  }
+  return lines;
+}
+
+// Позиция плитки на экране задаётся переменными --r и --c, а скольжение делает CSS (transition)
+function g48Place(t) {
+  t.el.style.setProperty('--r', Math.floor(t.idx / 4));
+  t.el.style.setProperty('--c', t.idx % 4);
+}
+
+function g48Paint(t) {
+  const len = String(t.v).length;
+  t.inner.className = 'in t' + (t.v <= 2048 ? t.v : 'big');
+  t.inner.textContent = t.v;
+  t.inner.style.fontSize = (len <= 2 ? 30 : len === 3 ? 25 : 20) + 'px';
+}
+
+function g48MakeTile(idx, v) {
+  const wrap = el('div', 'tile');
+  const inner = el('div', 'in');
+  wrap.appendChild(inner);
+  const t = { id: g48.nextId++, v: v, idx: idx, el: wrap, inner: inner };
+  g48.tiles.push(t);
+  g48.cells[idx] = t;
+  g48Place(t);
+  g48Paint(t);
+  $('g48Tiles').appendChild(wrap);
+  return t;
+}
+
+function g48Spawn() {
+  const empty = [];
+  g48.cells.forEach((t, i) => { if (!t) empty.push(i); });
+  if (!empty.length) return;
+  const idx = empty[Math.floor(Math.random() * empty.length)];
+  const t = g48MakeTile(idx, Math.random() < 0.9 ? 2 : 4);
+  t.inner.classList.add('new');
+}
+
+// Завершает отложенную часть хода (убрать поглощённые плитки, показать слияние)
+function g48Flush() {
+  if (!g48.cleanup) return;
+  clearTimeout(g48.timer);
+  const fn = g48.cleanup;
+  g48.cleanup = null;
+  fn();
+}
+
+function g48CanMove() {
+  if (g48.cells.some(t => !t)) return true;
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      const v = g48.cells[r * 4 + c].v;
+      if (c < 3 && g48.cells[r * 4 + c + 1].v === v) return true;
+      if (r < 3 && g48.cells[(r + 1) * 4 + c].v === v) return true;
+    }
+  }
+  return false;
+}
+
+function g48New() {
+  clearTimeout(g48.timer);
+  g48.cleanup = null;
+  $('g48Tiles').innerHTML = '';
+  g48.cells = Array(16).fill(null);
+  g48.tiles = [];
+  g48.score = 0;
+  g48.over = false;
+  g48.won = false;
+  g48.keepGoing = false;
+  $('g48Overlay').hidden = true;
+  g48Spawn();
+  g48Spawn();
+  g48Render();
+}
+
+function g48Popup(text) {
+  const p = el('div', 'score-pop', text);
+  $('g48Board').parentNode.appendChild(p);
+  setTimeout(() => p.remove(), 700);
+}
+
+function g48Move(dir) {
+  if (g48.over || (g48.won && !g48.keepGoing)) return;
+  g48Flush(); // если предыдущая анимация ещё идёт, завершаем её сразу
+
+  let moved = false;
+  let gain = 0;
+  const absorbed = [];  // плитки, которые «влились» в соседние
+  const merged = [];    // плитки, которые удвоились
+
+  for (const line of g48Lines(dir)) {
+    // Плитки линии по порядку; соседние одинаковые сливаются
+    const items = line.map(i => g48.cells[i]).filter(Boolean);
+    const out = [];
+    for (let k = 0; k < items.length; k++) {
+      if (items[k + 1] && items[k].v === items[k + 1].v) {
+        out.push({ tile: items[k], other: items[k + 1] });
+        k++; // вторую плитку пары пропускаем
+      } else {
+        out.push({ tile: items[k], other: null });
+      }
+    }
+
+    line.forEach(i => { g48.cells[i] = null; });
+    out.forEach((o, j) => {
+      const idx = line[j];
+      if (o.tile.idx !== idx || o.other) moved = true;
+      o.tile.idx = idx;
+      g48.cells[idx] = o.tile;
+      g48Place(o.tile);
+      if (o.other) {
+        o.other.idx = idx;       // вторая плитка скользит на то же место и потом исчезает
+        g48Place(o.other);
+        absorbed.push(o.other);
+        o.tile.v *= 2;
+        gain += o.tile.v;
+        merged.push(o.tile);
+      }
+    });
+  }
+
+  if (!moved) return;
+
+  g48.score += gain;
+  if (gain) g48Popup('+' + gain);
+  if (g48.score > g48.best) {
+    g48.best = g48.score;
+    save('g2048_best', g48.best);
+    lbSchedule();
+  }
+  g48Spawn();
+  if (!g48.won && g48.cells.some(t => t && t.v === 2048)) g48.won = true;
+  if (!g48CanMove()) g48.over = true;
+  g48Render();
+
+  // Когда плитки доехали: убираем поглощённые и «подпрыгиваем» сложившимися
+  g48.cleanup = () => {
+    absorbed.forEach(t => t.el.remove());
+    g48.tiles = g48.tiles.filter(t => !absorbed.includes(t));
+    merged.forEach(t => {
+      g48Paint(t);
+      void t.inner.offsetWidth; // перезапуск анимации
+      t.inner.classList.add('merge');
+    });
+  };
+  g48.timer = setTimeout(g48Flush, G48_SLIDE_MS);
+
+  if (g48.over || (g48.won && !g48.keepGoing)) setTimeout(g48ShowOverlay, 400);
+}
+
+function g48Render() {
+  $('g48Score').textContent = g48.score;
+  $('g48Best').textContent = g48.best;
+}
+
+// Окно поверх поля: победа или конец игры
+function g48ShowOverlay() {
+  const overlay = $('g48Overlay');
+  overlay.innerHTML = '';
+  if (g48.over) {
+    overlay.hidden = false;
+    overlay.appendChild(el('h2', '', 'Ходов больше нет'));
+    overlay.appendChild(el('div', '', 'Счёт: ' + g48.score));
+    const b = el('button', '', 'Ещё раз');
+    b.type = 'button';
+    b.addEventListener('click', g48New);
+    overlay.appendChild(b);
+  } else if (g48.won && !g48.keepGoing) {
+    overlay.hidden = false;
+    overlay.appendChild(el('h2', '', 'Вы собрали 2048!'));
+    const btns = el('div', 'btns');
+    const cont = el('button', '', 'Продолжить');
+    cont.type = 'button';
+    cont.addEventListener('click', () => { g48.keepGoing = true; overlay.hidden = true; });
+    const again = el('button', '', 'Новая игра');
+    again.type = 'button';
+    again.addEventListener('click', g48New);
+    btns.appendChild(cont);
+    btns.appendChild(again);
+    overlay.appendChild(btns);
+  } else {
+    overlay.hidden = true;
+  }
+}
+
+function g48Enter() {
+  if (!g48.built) {
+    g48.built = true;
+    const bg = $('g48Bg');
+    for (let i = 0; i < 16; i++) bg.appendChild(document.createElement('i'));
+    $('g48New').addEventListener('click', g48New);
+
+    // Свайпы по полю
+    const board = $('g48Board');
+    let start = null;
+    board.addEventListener('touchstart', (e) => {
+      const t = e.touches[0];
+      start = { x: t.clientX, y: t.clientY };
+    }, { passive: true });
+    board.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
+    board.addEventListener('touchend', (e) => {
+      if (!start) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - start.x;
+      const dy = t.clientY - start.y;
+      start = null;
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
+      if (Math.abs(dx) > Math.abs(dy)) g48Move(dx > 0 ? 'right' : 'left');
+      else g48Move(dy > 0 ? 'down' : 'up');
+    });
+
+    g48New();
+    return;
+  }
+  g48Render();
+  g48ShowOverlay();
+}
+
+document.addEventListener('keydown', (e) => {
+  if (activeGame !== '2048') return;
+  const key = e.key.toLowerCase();
+  let dir = null;
+  if (key === 'arrowleft'  || key === 'a' || key === 'ф') dir = 'left';
+  if (key === 'arrowright' || key === 'd' || key === 'в') dir = 'right';
+  if (key === 'arrowup'    || key === 'w' || key === 'ц') dir = 'up';
+  if (key === 'arrowdown'  || key === 's' || key === 'ы') dir = 'down';
+  if (dir) {
+    e.preventDefault();
+    g48Move(dir);
+  }
+});
+
+// =====================================================================
+//  САПЁР
+// =====================================================================
+const MINE_LEVELS = [
+  { id: 'easy', label: 'Новичок 9×9',    rows: 9,  cols: 9,  mines: 10 },
+  { id: 'mid',  label: 'Любитель 12×12', rows: 12, cols: 12, mines: 25 },
+  { id: 'hard', label: 'Профи 16×16',    rows: 16, cols: 16, mines: 40 },
+];
+
+const mn = {
+  level: load('mines_level', 'easy'),
+  cells: [],          // { mine, open, flag, n }
+  started: false,     // мины расставляются после первого клика
+  over: false,
+  won: false,
+  flagMode: false,
+  flags: 0,
+  opened: 0,
+  boom: -1,
+  newBest: false,
+  fresh: new Map(),   // только что открытые клетки -> порядок (для волны)
+  freshOrder: 0,
+  lastFlag: -1,       // клетка с только что поставленным флажком
+  justEnded: false,   // игра только что закончилась (для анимации)
+  t0: 0,
+  elapsed: 0,
+  timer: null,
+  built: false,
+};
+if (!MINE_LEVELS.some(l => l.id === mn.level)) mn.level = 'easy';
+
+function minesCfg() {
+  return MINE_LEVELS.find(l => l.id === mn.level);
+}
+
+function minesNeighbors(i) {
+  const cfg = minesCfg();
+  const r = Math.floor(i / cfg.cols);
+  const c = i % cfg.cols;
+  const out = [];
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      if (!dr && !dc) continue;
+      const rr = r + dr;
+      const cc = c + dc;
+      if (rr >= 0 && rr < cfg.rows && cc >= 0 && cc < cfg.cols) out.push(rr * cfg.cols + cc);
+    }
+  }
+  return out;
+}
+
+function minesNew() {
+  clearInterval(mn.timer);
+  const cfg = minesCfg();
+  mn.cells = Array.from({ length: cfg.rows * cfg.cols }, () => ({ mine: false, open: false, flag: false, n: 0 }));
+  mn.started = false;
+  mn.over = false;
+  mn.won = false;
+  mn.flags = 0;
+  mn.opened = 0;
+  mn.boom = -1;
+  mn.newBest = false;
+  mn.elapsed = 0;
+  mn.fresh = new Map();
+  mn.freshOrder = 0;
+  mn.lastFlag = -1;
+  mn.justEnded = false;
+  minesRender();
+}
+
+// Расставляем мины после первого клика: сама клетка и её соседи всегда безопасны
+function minesPlace(safe) {
+  const forbidden = new Set([safe].concat(minesNeighbors(safe)));
+  const pool = [];
+  mn.cells.forEach((c, i) => { if (!forbidden.has(i)) pool.push(i); });
+  shuffle(pool).slice(0, minesCfg().mines).forEach(i => { mn.cells[i].mine = true; });
+  mn.cells.forEach((c, i) => {
+    c.n = minesNeighbors(i).filter(j => mn.cells[j].mine).length;
+  });
+}
+
+function minesStartTimer() {
+  mn.t0 = Date.now();
+  mn.timer = setInterval(() => {
+    mn.elapsed = Math.min(999, Math.floor((Date.now() - mn.t0) / 1000));
+    $('minesTime').textContent = mn.elapsed;
+  }, 250);
+}
+
+function minesOpen(i, defer) {
+  if (mn.over) return;
+  const cell = mn.cells[i];
+  if (cell.open || cell.flag) return;
+
+  if (!mn.started) {
+    mn.started = true;
+    minesPlace(i);
+    minesStartTimer();
+  }
+
+  if (cell.mine) {
+    mn.boom = i;
+    minesEnd(false);
+    return;
+  }
+
+  // Открываем клетку; если вокруг нет мин, открываем и соседей (заливка «волной»)
+  const queue = [i];
+  while (queue.length) {
+    const k = queue.shift();
+    const c = mn.cells[k];
+    if (c.open || c.flag) continue;
+    c.open = true;
+    mn.opened++;
+    mn.fresh.set(k, mn.freshOrder++);
+    if (c.n === 0) {
+      minesNeighbors(k).forEach(j => {
+        if (!mn.cells[j].open && !mn.cells[j].flag) queue.push(j);
+      });
+    }
+  }
+
+  const cfg = minesCfg();
+  if (mn.opened === cfg.rows * cfg.cols - cfg.mines) minesEnd(true);
+  else if (!defer) minesRender();
+}
+
+// Клик по открытой клетке с числом: если вокруг стоит столько флажков, сколько указано, открываем остальных соседей
+function minesChord(i) {
+  const c = mn.cells[i];
+  if (mn.over || !c.open || c.n === 0) return;
+  const nb = minesNeighbors(i);
+  if (nb.filter(j => mn.cells[j].flag).length !== c.n) return;
+  nb.forEach(j => minesOpen(j, true));
+  if (!mn.over) minesRender();
+}
+
+function minesFlag(i) {
+  if (mn.over) return;
+  const c = mn.cells[i];
+  if (c.open) return;
+  c.flag = !c.flag;
+  mn.flags += c.flag ? 1 : -1;
+  mn.lastFlag = c.flag ? i : -1;
+  minesRender();
+}
+
+function minesEnd(won) {
+  mn.over = true;
+  mn.won = won;
+  mn.justEnded = true;
+  clearInterval(mn.timer);
+  mn.elapsed = Math.min(999, Math.floor((Date.now() - mn.t0) / 1000));
+
+  if (won) {
+    mn.cells.forEach(c => { if (c.mine) c.flag = true; });
+    mn.flags = minesCfg().mines;
+    const best = load('mines_best', {});
+    if (!best[mn.level] || mn.elapsed < best[mn.level]) {
+      best[mn.level] = mn.elapsed;
+      save('mines_best', best);
+      mn.newBest = true;
+      lbSchedule();
+    }
+  }
+  minesRender();
+}
+
+// Размер клетки подбирается под ширину экрана
+function minesFit() {
+  const cfg = minesCfg();
+  const avail = Math.min(window.innerWidth - 32, 520) - 12;
+  const size = Math.max(18, Math.min(36, Math.floor((avail - (cfg.cols - 1) * 2) / cfg.cols)));
+  $('minesGrid').style.setProperty('--cs', size + 'px');
+}
+
+function minesRender() {
+  const cfg = minesCfg();
+
+  renderChips($('minesLevels'), MINE_LEVELS, mn.level, id => {
+    mn.level = id;
+    save('mines_level', id);
+    minesFit();
+    minesNew();
+  });
+
+  $('minesLeft').textContent = cfg.mines - mn.flags;
+  $('minesTime').textContent = mn.elapsed;
+  $('minesFace').textContent = mn.over ? (mn.won ? '😎' : '😵') : '🙂';
+
+  const flagBtn = $('minesFlagMode');
+  flagBtn.textContent = '🚩 Режим флажка: ' + (mn.flagMode ? 'вкл' : 'выкл');
+  flagBtn.classList.toggle('active', mn.flagMode);
+
+  let status = '';
+  if (!mn.started && !mn.over) status = 'Нажмите на любую клетку';
+  if (mn.over && mn.won) {
+    const best = load('mines_best', {})[mn.level];
+    status = 'Победа! Время: ' + mn.elapsed + ' с' +
+      (mn.newBest ? ' — новый рекорд!' : best ? ' (лучшее: ' + best + ' с)' : '');
+  }
+  if (mn.over && !mn.won) status = 'Взрыв! Попробуйте ещё раз';
+  $('minesStatus').textContent = status;
+
+  const grid = $('minesGrid');
+  grid.style.gridTemplateColumns = 'repeat(' + cfg.cols + ', var(--cs))';
+  grid.innerHTML = '';
+  let mineOrder = 0;
+  mn.cells.forEach((c, i) => {
+    let cls = 'mcell';
+    let text = '';
+    let delay = -1;
+    if (c.open) {
+      cls += ' open';
+      if (c.n > 0) { cls += ' n' + c.n; text = String(c.n); }
+      if (mn.fresh.has(i)) { cls += ' reveal'; delay = Math.min(mn.fresh.get(i) * 14, 420); }
+    } else if (mn.over && !mn.won && c.mine && !c.flag) {
+      text = '💣';
+      if (mn.justEnded) { cls += ' mine-show'; delay = Math.min(mineOrder++ * 40, 600); }
+    } else if (mn.over && !mn.won && c.flag && !c.mine) {
+      cls += ' wrong';
+      text = '❌';
+    } else if (c.flag) {
+      text = '🚩';
+      if (i === mn.lastFlag) cls += ' flagged';
+    }
+    if (i === mn.boom) { cls += ' boom'; delay = 0; }
+    const b = el('button', cls, text);
+    b.type = 'button';
+    b.dataset.i = i;
+    if (delay >= 0) b.style.animationDelay = delay + 'ms';
+    grid.appendChild(b);
+  });
+
+  // Встряска поля и «прыжок» смайлика, когда игра закончилась
+  const face = $('minesFace');
+  if (mn.justEnded) {
+    grid.classList.remove('shake');
+    face.classList.remove('bounce');
+    void grid.offsetWidth;
+    if (!mn.won) grid.classList.add('shake');
+    face.classList.add('bounce');
+  }
+  mn.fresh = new Map();
+  mn.freshOrder = 0;
+  mn.lastFlag = -1;
+  mn.justEnded = false;
+}
+
+function minesEnter() {
+  if (!mn.built) {
+    mn.built = true;
+    const grid = $('minesGrid');
+
+    grid.addEventListener('click', (e) => {
+      const b = e.target.closest('.mcell');
+      if (!b) return;
+      const i = Number(b.dataset.i);
+      if (mn.flagMode) minesFlag(i);
+      else if (mn.cells[i].open) minesChord(i);
+      else minesOpen(i);
+    });
+    grid.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      const b = e.target.closest('.mcell');
+      if (b) minesFlag(Number(b.dataset.i));
+    });
+
+    $('minesFace').addEventListener('click', minesNew);
+    $('minesFlagMode').addEventListener('click', () => {
+      mn.flagMode = !mn.flagMode;
+      minesRender();
+    });
+    window.addEventListener('resize', () => { if (activeGame === 'mines') minesFit(); });
+
+    minesFit();
+    minesNew();
+    return;
+  }
+  minesFit();
+  minesRender();
+}
+
+// =====================================================================
+//  ПАМЯТЬ
+// =====================================================================
+const MEM_LEVELS = [
+  { id: 'easy', label: 'Лёгкий 4×3',  cols: 4, rows: 3 },
+  { id: 'mid',  label: 'Обычный 4×4', cols: 4, rows: 4 },
+  { id: 'hard', label: 'Сложный 6×4', cols: 6, rows: 4 },
+];
+const MEM_ICONS = ['🍎', '🍌', '🍇', '🍒', '🍓', '🍋', '🥝', '🍑', '🍉', '🥕', '🍄', '🥑'];
+
+const mem = {
+  level: load('mem_level', 'mid'),
+  cards: [],        // { v, open, done }
+  first: -1,        // первая открытая карточка в паре
+  lock: false,      // пока показываем неудачную пару, клики игнорируются
+  moves: 0,
+  matched: 0,
+  started: false,
+  over: false,
+  newBest: false,
+  t0: 0,
+  elapsed: 0,
+  timer: null,
+  built: false,
+};
+if (!MEM_LEVELS.some(l => l.id === mem.level)) mem.level = 'mid';
+mem.rebuild = true;   // пересобрать карточки на поле
+mem.miss = [];        // пара, которая не совпала (для анимации)
+
+function memCfg() {
+  return MEM_LEVELS.find(l => l.id === mem.level);
+}
+
+function memNew() {
+  clearInterval(mem.timer);
+  const cfg = memCfg();
+  const pairs = cfg.cols * cfg.rows / 2;
+  const icons = shuffle(MEM_ICONS).slice(0, pairs);
+  mem.cards = shuffle(icons.concat(icons)).map(v => ({ v: v, open: false, done: false }));
+  mem.first = -1;
+  mem.lock = false;
+  mem.moves = 0;
+  mem.matched = 0;
+  mem.started = false;
+  mem.over = false;
+  mem.newBest = false;
+  mem.elapsed = 0;
+  mem.rebuild = true;
+  mem.miss = [];
+  memRender();
+}
+
+function memFlip(i) {
+  const card = mem.cards[i];
+  if (mem.lock || mem.over || card.open || card.done) return;
+
+  if (!mem.started) {
+    mem.started = true;
+    mem.t0 = Date.now();
+    mem.timer = setInterval(() => {
+      mem.elapsed = Math.floor((Date.now() - mem.t0) / 1000);
+      $('memTime').textContent = formatTime(mem.elapsed);
+    }, 250);
+  }
+
+  card.open = true;
+
+  if (mem.first === -1) {
+    mem.first = i;
+    memRender();
+    return;
+  }
+
+  const firstCard = mem.cards[mem.first];
+  mem.first = -1;
+  mem.moves++;
+
+  if (firstCard.v === card.v) {
+    firstCard.done = true;
+    card.done = true;
+    firstCard.open = false;
+    card.open = false;
+    mem.matched++;
+    if (mem.matched === mem.cards.length / 2) memWin();
+    memRender();
+  } else {
+    // Пара не совпала: показываем её и через паузу закрываем
+    mem.lock = true;
+    mem.miss = [firstCard, card];
+    memRender();
+    setTimeout(() => {
+      firstCard.open = false;
+      card.open = false;
+      mem.lock = false;
+      mem.miss = [];
+      memRender();
+    }, 800);
+  }
+}
+
+function memWin() {
+  mem.over = true;
+  clearInterval(mem.timer);
+  mem.elapsed = Math.floor((Date.now() - mem.t0) / 1000);
+
+  // Лучший результат: меньше ходов, а при равенстве меньше времени
+  const best = load('mem_best', {});
+  const prev = best[mem.level];
+  if (!prev || mem.moves < prev.moves || (mem.moves === prev.moves && mem.elapsed < prev.time)) {
+    best[mem.level] = { moves: mem.moves, time: mem.elapsed };
+    save('mem_best', best);
+    mem.newBest = true;
+    lbSchedule();
+  }
+}
+
+function memRender() {
+  const cfg = memCfg();
+
+  renderChips($('memLevels'), MEM_LEVELS, mem.level, id => {
+    mem.level = id;
+    save('mem_level', id);
+    memNew();
+  });
+
+  $('memMoves').textContent = mem.moves;
+  $('memTime').textContent = formatTime(mem.elapsed);
+  const best = load('mem_best', {})[mem.level];
+  $('memBest').textContent = best ? best.moves + ' ход.' : '—';
+
+  let status = '';
+  if (!mem.started && !mem.over) status = 'Откройте любую карточку';
+  if (mem.over) {
+    status = 'Готово! ' + mem.moves + ' ход. за ' + formatTime(mem.elapsed) + (mem.newBest ? ' — новый рекорд!' : '');
+  }
+  $('memStatus').textContent = status;
+
+  const grid = $('memGrid');
+  grid.style.gridTemplateColumns = 'repeat(' + cfg.cols + ', 1fr)';
+
+  // Карточки создаются один раз на партию, чтобы сработала анимация переворота
+  if (mem.rebuild || grid.children.length !== mem.cards.length) {
+    mem.rebuild = false;
+    grid.innerHTML = '';
+    mem.cards.forEach((c, i) => {
+      const b = el('button', 'mem-card');
+      b.type = 'button';
+      b.style.fontSize = (cfg.cols >= 6 ? 26 : 34) + 'px';
+      b.dataset.i = i;
+      b.setAttribute('aria-label', 'Карточка ' + (i + 1));
+      const inner = el('span', 'mc-inner');
+      inner.appendChild(el('span', 'mc-face mc-back', '?'));
+      inner.appendChild(el('span', 'mc-face mc-front', c.v));
+      b.appendChild(inner);
+      grid.appendChild(b);
+    });
+  }
+  mem.cards.forEach((c, i) => {
+    const b = grid.children[i];
+    b.classList.toggle('open', c.open);
+    b.classList.toggle('done', c.done);
+    b.classList.toggle('miss', mem.miss.includes(c));
+  });
+  $('memStatus').classList.toggle('celebrate', mem.over);
+}
+
+function memEnter() {
+  if (!mem.built) {
+    mem.built = true;
+    $('memGrid').addEventListener('click', (e) => {
+      const b = e.target.closest('.mem-card');
+      if (b) memFlip(Number(b.dataset.i));
+    });
+    $('memNew').addEventListener('click', memNew);
+    memNew();
+    return;
+  }
+  memRender();
+}
+
+// =====================================================================
+//  ТАБЛИЦА ЛИДЕРОВ
+// =====================================================================
+// Личные рекорды хранятся на устройстве, а на сервер отправляется только лучший результат
+// в каждой игре. Сервер сам оставляет один результат на устройство и на IP-адрес.
+const LB_GAMES = [
+  { id: 'snake',  label: '🐍 Змейка', lower: false },
+  { id: 'g2048',  label: '🔢 2048',   lower: false },
+  { id: 'mines',  label: '💣 Сапёр',  lower: true, levels: MINE_LEVELS, prefix: 'mines_' },
+  { id: 'memory', label: '🃏 Память', lower: true, levels: MEM_LEVELS,  prefix: 'mem_' },
+];
+const lb = {
+  game: load('lb_game', 'snake'),
+  level: { mines: 'easy', memory: 'easy' },
+  token: 0,
+};
+if (!LB_GAMES.some(g => g.id === lb.game)) lb.game = 'snake';
+
+function lbDevice() {
+  let d = load('lb_device', '');
+  if (!d) {
+    try { d = crypto.randomUUID(); } catch (e) { d = ''; }
+    if (!d) d = 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+    save('lb_device', d);
+  }
+  return d;
+}
+
+function lbKey() {
+  const g = LB_GAMES.find(x => x.id === lb.game);
+  return g.levels ? g.prefix + lb.level[g.id] : g.id;
+}
+
+// Лучшие результаты на этом устройстве. Для сапёра это секунды,
+// для памяти — ходы * 1000 + секунды (меньше = лучше).
+function lbLocalBests() {
+  const out = [];
+  const sn = load('snake_pub', 0);
+  if (sn > 0) out.push({ key: 'snake', score: sn, lower: false });
+  const g = load('g2048_best', 0);
+  if (g > 0) out.push({ key: 'g2048', score: g, lower: false });
+  const mb = load('mines_best', {});
+  Object.keys(mb).forEach(l => out.push({ key: 'mines_' + l, score: mb[l], lower: true }));
+  const mm = load('mem_best', {});
+  Object.keys(mm).forEach(l => out.push({ key: 'mem_' + l, score: mm[l].moves * 1000 + Math.min(mm[l].time, 999), lower: true }));
+  return out;
+}
+
+function lbFormat(key, v) {
+  if (key.indexOf('mines_') === 0) return formatTime(v);
+  if (key.indexOf('mem_') === 0) return Math.floor(v / 1000) + ' ход. · ' + formatTime(v % 1000);
+  return String(v);
+}
+
+function lbPost(fn, body) {
+  return request(SUPABASE_URL + '/rest/v1/rpc/' + fn, {
+    method: 'POST',
+    headers: Object.assign({}, API_HEADERS, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify(body),
+  });
+}
+
+let lbSyncing = false;
+let lbTimer = null;
+function lbSchedule(ms) {
+  clearTimeout(lbTimer);
+  lbTimer = setTimeout(lbSyncAll, ms === undefined ? 3000 : ms);
+}
+
+// Отправляет на сервер те личные рекорды, которые он ещё не получил
+async function lbSyncAll() {
+  if (lbSyncing) { lbSchedule(1500); return; }
+  lbSyncing = true;
+  const sent = load('lb_sent', {});
+  const name = load('playerName', '') || 'Игрок';
+  try {
+    for (const r of lbLocalBests()) {
+      if (sent[r.key] === r.score) continue;
+      await lbPost('submit_record', { p_game: r.key, p_device: lbDevice(), p_name: name, p_score: r.score, p_lower: r.lower });
+      sent[r.key] = r.score;
+      save('lb_sent', sent);
+    }
+  } catch (e) { /* нет связи: попробуем в следующий раз */ }
+  lbSyncing = false;
+}
+
+async function lbLoad() {
+  const my = ++lb.token;
+  const g = LB_GAMES.find(x => x.id === lb.game);
+  const key = lbKey();
+  setStatus('Загрузка…');
+  let rows;
+  try {
+    await lbSyncAll();
+    const res = await lbPost('get_leaderboard', { p_game: key, p_lower: g.lower, p_limit: 20 });
+    rows = (await res.json()).map(r => ({ name: r.name, score: r.score }));
+    setStatus('Общая таблица: её видят все игроки');
+  } catch (e) {
+    const mine = lbLocalBests().find(r => r.key === key);
+    rows = mine ? [{ name: load('playerName', '') || 'Игрок', score: mine.score }] : [];
+    setStatus('Нет связи с сервером: показан только ваш результат');
+  }
+  if (my !== lb.token) return;   // пока грузили, игрок переключил вкладку
+  lbRender(rows, key);
+}
+
+function lbRender(rows, key) {
+  scoreListEl.innerHTML = '';
+  if (!rows.length) scoreListEl.appendChild(el('li', 'empty', 'Пока пусто — сыграйте!'));
+  const mine = lbLocalBests().find(r => r.key === key);
+  const myName = load('playerName', '') || 'Игрок';
+  rows.forEach(r => {
+    const isMe = mine && mine.score === r.score && myName === r.name;
+    const li = el('li', isMe ? 'me' : '');
+    const row = el('div', 'row');
+    row.appendChild(el('span', 'name', r.name));
+    row.appendChild(el('span', 'pts', lbFormat(key, r.score)));
+    li.appendChild(row);
+    scoreListEl.appendChild(li);
+  });
+}
+
+function lbTabs() {
+  renderChips($('lbGames'), LB_GAMES, lb.game, id => {
+    lb.game = id;
+    save('lb_game', id);
+    lbTabs();
+    lbLoad();
+  });
+  const g = LB_GAMES.find(x => x.id === lb.game);
+  const box = $('lbLevels');
+  box.style.display = g.levels ? '' : 'none';
+  if (g.levels) {
+    renderChips(box, g.levels, lb.level[g.id], id => {
+      lb.level[g.id] = id;
+      lbTabs();
+      lbLoad();
+    });
+  }
+}
+
+function lbEnter() {
+  $('lbName').value = load('playerName', '');
+  lbTabs();
+  lbLoad();
+}
+
+$('lbName').addEventListener('change', () => {
+  const name = $('lbName').value.trim().slice(0, 12);
+  save('playerName', name);
+  save('lb_sent', {});   // отправим результаты заново под новым именем
+  lbLoad();
+});
+$('lbBtn').addEventListener('click', () => { location.hash = 'lb'; });
+
+setTimeout(lbSyncAll, 2500);   // при заходе отправляем накопленные рекорды
+
+// =====================================================================
+//  МЕНЮ И ПЕРЕКЛЮЧЕНИЕ ИГР
+// =====================================================================
+const GAME_LIST = [
+  { id: 'snake',  name: 'Змейка',          icon: '🐍', desc: 'Собирай яблоки и открывай улучшения' },
+  { id: 'ttt',    name: 'Крестики-нолики', icon: '❌', desc: 'Против компьютера или вдвоём' },
+  { id: '2048',   name: '2048',            icon: '🔢', desc: 'Складывай плитки до 2048' },
+  { id: 'mines',  name: 'Сапёр',           icon: '💣', desc: 'Найди все мины, не взорвавшись' },
+  { id: 'memory', name: 'Память',          icon: '🃏', desc: 'Найди все пары карточек' },
+];
+const NEUTRAL_PAGE = '#14172b';   // цвет страницы в меню и в играх без своей темы
+
+// Короткая строка с результатом под названием игры в меню
+function menuStat(id) {
+  if (id === 'snake') {
+    const b = load('snake_best', 0);
+    return b ? 'Рекорд: ' + b : '';
+  }
+  if (id === 'ttt') {
+    let wins = 0;
+    ['easy', 'medium', 'hard'].forEach(m => { wins += load('ttt_stats_' + m, { x: 0 }).x; });
+    return wins ? 'Побед над компьютером: ' + wins : '';
+  }
+  if (id === '2048') {
+    const b = load('g2048_best', 0);
+    return b ? 'Рекорд: ' + b : '';
+  }
+  if (id === 'mines') {
+    const n = Object.keys(load('mines_best', {})).length;
+    return n ? 'Пройдено уровней: ' + n + ' из 3' : '';
+  }
+  if (id === 'memory') {
+    const n = Object.keys(load('mem_best', {})).length;
+    return n ? 'Пройдено уровней: ' + n + ' из 3' : '';
+  }
+  return '';
+}
+
+function renderMenu() {
+  const grid = $('menuGrid');
+  grid.innerHTML = '';
+  GAME_LIST.forEach((g, idx) => {
+    const card = el('button', 'game-card');
+    card.type = 'button';
+    card.style.setProperty('--i', idx);
+    card.appendChild(el('span', 'ico', g.icon));
+    card.appendChild(el('span', 'nm', g.name));
+    card.appendChild(el('span', 'ds', g.desc));
+    card.appendChild(el('span', 'st', menuStat(g.id)));
+    card.addEventListener('click', () => { location.hash = g.id; });
+    grid.appendChild(card);
+  });
+}
+
+function showView(id) {
+  if (id !== 'menu' && id !== 'lb' && !GAME_LIST.some(g => g.id === id)) id = 'menu';
+
+  // Уходя из змейки, ставим её на паузу
+  if (activeGame === 'snake' && id !== 'snake') pauseSnake();
+  activeGame = id;
+
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + id));
+  $('bar').classList.toggle('menu', id === 'menu');
+  $('lbBtn').classList.toggle('active', id === 'lb');
+  const game = GAME_LIST.find(g => g.id === id);
+  $('gameTitle').textContent = id === 'lb' ? 'Лидеры' : game ? game.name : '';
+  document.body.style.backgroundColor = NEUTRAL_PAGE;
+
+  if (id === 'menu') renderMenu();
+  if (id === 'snake') enterSnake();
+  if (id === 'ttt') tttEnter();
+  if (id === '2048') g48Enter();
+  if (id === 'mines') minesEnter();
+  if (id === 'memory') memEnter();
+  if (id === 'lb') lbEnter();
+  window.scrollTo(0, 0);
+}
+
+$('backBtn').addEventListener('click', () => { location.hash = 'menu'; });
+window.addEventListener('hashchange', () => showView(location.hash.slice(1) || 'menu'));
+showView(location.hash.slice(1) || 'menu');
+
 </script>
 </body>
 </html>
