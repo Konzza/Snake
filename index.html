@@ -873,7 +873,15 @@ function gameOver() {
   if (score > load('snake_best', 0)) {
     save('snake_best', score);
     bestEl.textContent = score;
-    openNameBox();
+    const savedName = load('playerName', '');
+    if (savedName) {
+      // Имя уже сохранено в браузере: отправляем рекорд без вопросов
+      save('snake_pub', Math.max(load('snake_pub', 0), score));
+      lbSchedule(0);
+      showNotice('Новый рекорд записан как «' + savedName + '»');
+    } else {
+      openNameBox();
+    }
   }
 }
 
